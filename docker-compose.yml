@@ -69,10 +69,11 @@ services:
         reservations:
           memory: 2G
           cpus: '1.0'
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+          # GPU configuration commented out - can be enabled when NVIDIA drivers are available
+          # devices:
+          #   - driver: nvidia
+          #     count: 1
+          #     capabilities: [gpu]
 
   nginx:
     image: nginx:alpine
