@@ -1,0 +1,268 @@
+# SimApp Multi-Server Architecture Documentation
+==================================================
+
+## Overview
+SimApp is deployed across multiple Paperspace servers using Kubernetes orchestration for scalable Monte Carlo simulation processing. This setup provides automatic scaling, load balancing, and high availability for simulation workloads.
+
+## Architecture Components
+
+### Primary Server (Master Node)
+- **IP Address**: 64.71.146.187 (External), 10.64.33.167 (Internal)
+- **Hostname**: pso1zne8qfxx
+- **Role**: Kubernetes Master Node + SimApp Services
+- **Services**:
+  - Kubernetes Control Plane (API Server, etcd, Scheduler)
+  - SimApp Backend API (FastAPI)
+  - SimApp Frontend (React/Vite)
+  - PostgreSQL Database
+  - Redis Cache
+  - NGINX Ingress Controller
+  - Monte Carlo Simulation Engine
+
+### Secondary Server (Worker Node)
+- **IP Address**: 72.52.107.230 (External), 10.64.33.123 (Internal)
+- **Hostname**: pso1zne8qfxx
+- **Role**: Kubernetes Worker Node
+- **Purpose**: On-demand scaling for simulation workloads
+- **Status**: Ready for cluster joining (setup completed)
+
+## Access Methods
+
+### 1. SSH Access (Localhost Tunneling - Recommended)
+```bash
+# From your local machine, create SSH tunnel to primary server
+ssh -L 9090:localhost:80 paperspace@64.71.146.187
+
+# Access SimApp via browser
+http://localhost:9090
+```
+
+### 2. Direct External Access
+```bash
+# Access SimApp directly via external IP
+http://64.71.146.187:80
+```
+
+### 3. Internal Server Communication
+```bash
+# SSH from primary to secondary server
+ssh paperspace3  # or ssh paperspace@72.52.107.230
+```
+
+## Kubernetes Cluster Configuration
+
+### Master Node Setup
+- **Kubernetes Version**: 1.28.15
+- **Container Runtime**: containerd
+- **Network Plugin**: Flannel (CNI)
+- **Pod CIDR**: 10.244.0.0/16
+- **Service CIDR**: 10.96.0.0/12
+
+### Worker Node Status
+- **Setup**: ✅ Completed
+- **Kubernetes Components**: ✅ Installed
+- **Join Status**: ⚠️ Pending (network connectivity issue)
+- **Join Command Available**: Yes
+
+### Current Join Issue
+The worker node cannot connect to the master's API server at `10.64.33.167:6443` due to network routing. This is likely because:
+1. Paperspace internal network may not route between different machine instances
+2. Firewall rules may be blocking port 6443
+3. Different availability zones or network segments
+
+## Services & Ports
+
+### Primary Server Services
+```
+Port 80    - NGINX Ingress (HTTP)
+Port 443   - NGINX Ingress (HTTPS) 
+Port 3000  - Frontend Development Server
+Port 8000  - Backend API Server
+Port 5432  - PostgreSQL Database
+Port 6379  - Redis Cache
+Port 6443  - Kubernetes API Server
+Port 10250 - Kubelet
+Port 10256 - Kube-proxy
+```
+
+### Authentication
+- **Auth0 Domain**: dev-jw6k27f0v5tcgl56.eu.auth0.com
+- **Client ID**: UDXorRodTlUmgkigfaWW81Rr40gKpeAJ
+- **Audience**: https://simapp.ai/api
+- **Callback URLs**: 
+  - http://localhost:9090/callback
+  - http://64.71.146.187:9090/callback
+  - https://simapp.ai/callback
+
+## Deployment Strategy
+
+### Current: Single-Server Kubernetes
+- All SimApp services running on primary server
+- Kubernetes provides container orchestration
+- Horizontal Pod Autoscaler (HPA) configured for auto-scaling
+- Ready for Blue-Green deployments
+
+### Planned: Multi-Server Kubernetes Cluster
+- Primary server as master node
+- Secondary server as worker node for overflow capacity
+- Automatic workload distribution
+- Fault tolerance and high availability
+
+## Scaling Configuration
+
+### Horizontal Pod Autoscaler (HPA)
+```yaml
+# Backend API: 2-10 replicas based on CPU/memory
+# Frontend: 2-5 replicas based on CPU
+# Simulation Engine: 1-20 replicas based on queue depth
+```
+
+### Auto-scaling Triggers
+- CPU utilization > 70%
+- Memory utilization > 80%
+- Custom metrics: simulation queue length
+
+## Troubleshooting
+
+### Common Connection Issues
+
+1. **SSH Access Problems**
+   ```bash
+   # Verify SSH key is added to authorized_keys
+   cat ~/.ssh/authorized_keys
+   
+   # Test SSH connection
+   ssh -v paperspace@64.71.146.187
+   ```
+
+2. **Auth0 Login Issues**
+   - Clear browser cache and localStorage
+   - Ensure callback URLs are correctly configured
+   - Check Auth0 application settings
+
+3. **API 403 Forbidden Errors**
+   - Usually indicates missing refresh token
+   - Re-login to establish fresh Auth0 session
+   - Verify Auth0 scope includes 'offline_access'
+
+4. **Kubernetes Node Join Issues**
+   ```bash
+   # On master node, regenerate join command
+   sudo kubeadm token create --print-join-command
+   
+   # Check cluster status
+   kubectl get nodes -o wide
+   
+   # Verify network connectivity
+   ping 10.64.33.167
+   ```
+
+## Network Topology
+
+```
+Internet
+    ↓
+[NGINX Ingress] → Load Balancer
+    ↓
+[SimApp Services] → Kubernetes Pods
+    ↓
+[Internal Network] → 10.64.33.0/24
+    ↓
+Primary: 10.64.33.167 ←→ Secondary: 10.64.33.123
+```
+
+## File Locations
+
+### Configuration Files
+- Docker Compose: `/home/paperspace/SimApp/docker-compose.yml`
+- Kubernetes Manifests: `/home/paperspace/SimApp/kubernetes/`
+- NGINX Config: `/home/paperspace/SimApp/nginx/nginx.conf`
+- Environment Files: `/home/paperspace/SimApp/*.env`
+
+### Important Scripts
+- Worker Setup: `/home/paperspace/SimApp/worker-node-complete-setup.sh`
+- Kubernetes Deploy: `/home/paperspace/SimApp/kubernetes/deploy-simapp.sh`
+
+## Monitoring & Logs
+
+### Check Service Status
+```bash
+# Docker services
+sudo docker-compose ps
+
+# Kubernetes pods
+kubectl get pods -A
+
+# System services
+systemctl status kubelet containerd
+```
+
+### View Logs
+```bash
+# Backend API logs
+kubectl logs -f deployment/simapp-backend
+
+# Frontend logs  
+kubectl logs -f deployment/simapp-frontend
+
+# System logs
+journalctl -u kubelet -f
+```
+
+## Security
+
+### SSH Keys
+- Primary server SSH key installed on secondary server
+- Key format: ED25519
+- Location: `~/.ssh/authorized_keys`
+
+### Firewall Rules
+- Kubernetes ports (6443, 10250, 10256) need to be open between nodes
+- Current issue: Network connectivity between Paperspace instances
+
+### Auth0 Security
+- Secure token refresh mechanism
+- Scoped API access
+- HTTPS enforced for production
+
+## Next Steps
+
+1. **Resolve Network Connectivity**
+   - Contact Paperspace support for inter-instance networking
+   - Consider VPN or private network setup
+   - Alternative: Use external IPs for cluster communication
+
+2. **Complete Cluster Setup**
+   - Join worker node to cluster
+   - Test pod scheduling across nodes
+   - Verify auto-scaling functionality
+
+3. **Implement Blue-Green Deployment**
+   - Set up deployment pipelines
+   - Configure traffic switching
+   - Test rollback procedures
+
+4. **Production Optimization**
+   - Enable HTTPS/TLS certificates
+   - Set up persistent storage
+   - Configure backup strategies
+
+## Contact & Support
+
+For technical issues:
+1. Check logs in `/var/log/` directories
+2. Review Kubernetes events: `kubectl get events`
+3. Monitor system resources: `htop`, `df -h`
+4. Verify network connectivity: `netstat -tulpn`
+
+## Version History
+
+- **v1.0** (Sept 21, 2025): Initial multi-server architecture setup
+- Master node configured and operational
+- Worker node prepared but not yet joined
+- SimApp services deployed and running
+
+---
+Generated: September 21, 2025
+Author: SimApp DevOps Team
+Architecture: Kubernetes Multi-Server Monte Carlo Platform
