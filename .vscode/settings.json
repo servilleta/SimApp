@@ -1,0 +1,25 @@
+{
+  "git.enabled": true,
+  "git.path": "/usr/bin/git",
+  "git.autofetch": true,
+  "git.autorefresh": true,
+  "git.enableSmartCommit": true,
+  "git.confirmSync": false,
+  "git.enableStatusBarSync": true,
+  "git.showProgress": true,
+  "git.detectSubmodules": true,
+  "git.fetchOnPull": true,
+  "git.pruneOnFetch": true,
+  "scm.showIncomingChanges": "always",
+  "scm.showOutgoingChanges": "always",
+  "terminal.integrated.shell.linux": "/bin/bash",
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/*/**": true,
+    "**/__pycache__/**": true,
+    "**/cache/**": true,
+    "**/uploads/**": true,
+    "**/persistent_excel_files/**": true
+  }
+}
