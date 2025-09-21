@@ -1,0 +1,74 @@
+[
+  {
+    "engine": "standard",
+    "concurrency": 1,
+    "iterations": 1000,
+    "runs": 1,
+    "failures": 1,
+    "wall_time_total": 0.012564055999973789
+  },
+  {
+    "engine": "standard",
+    "concurrency": 1,
+    "iterations": 1000,
+    "error": "Unknown format code 'f' for object of type 'str'"
+  },
+  {
+    "engine": "standard",
+    "concurrency": 4,
+    "iterations": 1000,
+    "runs": 4,
+    "failures": 4,
+    "wall_time_total": 0.0010187100000393912
+  },
+  {
+    "engine": "standard",
+    "concurrency": 4,
+    "iterations": 1000,
+    "error": "Unknown format code 'f' for object of type 'str'"
+  },
+  {
+    "engine": "enhanced",
+    "concurrency": 1,
+    "iterations": 1000,
+    "runs": 1,
+    "failures": 0,
+    "wall_time_total": 4.725278943000035,
+    "wall_time_min": 4.725138718000039,
+    "wall_time_max": 4.725138718000039,
+    "wall_time_avg": 4.725138718000039
+  },
+  {
+    "engine": "enhanced",
+    "concurrency": 4,
+    "iterations": 1000,
+    "runs": 4,
+    "failures": 0,
+    "wall_time_total": 4.411446076000061,
+    "wall_time_min": 1.08399557000007,
+    "wall_time_max": 1.1418869080000604,
+    "wall_time_avg": 1.1027570860000253
+  },
+  {
+    "engine": "arrow",
+    "concurrency": 1,
+    "iterations": 1000,
+    "runs": 1,
+    "failures": 0,
+    "wall_time_total": 0.0311767759999384,
+    "wall_time_min": 0.031016527000019778,
+    "wall_time_max": 0.031016527000019778,
+    "wall_time_avg": 0.031016527000019778
+  },
+  {
+    "engine": "arrow",
+    "concurrency": 4,
+    "iterations": 1000,
+    "runs": 4,
+    "failures": 0,
+    "wall_time_total": 0.03292640699999083,
+    "wall_time_min": 0.017038745999911953,
+    "wall_time_max": 0.03003224400004001,
+    "wall_time_avg": 0.023587131749991386
+  }
+]

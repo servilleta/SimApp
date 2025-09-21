@@ -1,0 +1,74 @@
+Live Histogram & Persistent Progress – Implementation Guide
+===========================================================
+Objective
+---------
+1. Progress panel must **stay visible** after first result appears.
+2. Histograms should **update live** while iterations are running (streaming batches).
+
+Prerequisites
+-------------
+• Backend already emits rich progress updates via `update_simulation_progress`.
+• React app uses `progressManager` + Redux slice (`simulationSlice`).
+
+Phases
+------
+Phase A – Backend (1 dev-hour)
+1. _Arrow & Enhanced progress callbacks_
+   • Maintain `partial_histogram_bins` & `partial_histogram_counts` inside callbacks.
+   • Emit every 5 percentage points or every N iterations (configurable).
+   ```python
+   if pct_clamped - last_hist_sent >= 5:
+       last_hist_sent = pct_clamped
+       update_simulation_progress(sim_id, {
+           'partial_histogram_bins': hist_edges.tolist(),
+           'partial_histogram_counts': hist_counts.astype(int).tolist(),
+       })
+   ```
+2. No performance risk: JSON payload ≤ 10 KB per update.
+3. Unit-test with mock engine (simulate 20 updates → assert TTL / size).
+
+Phase B – Redux layer (2 dev-hours)
+1. Extend `simulationSlice` state:
+   ```ts
+   interface TargetResultDraft {
+       histogramDraft?: { bin_edges: number[]; counts: number[] };
+   }
+   ```
+2. Inside `extraReducers` for `fetchSimulationStatus.fulfilled` merge:
+   ```ts
+   if (payload.partial_histogram_bins) {
+       draft.multipleResults[idx].histogramDraft = {
+         bin_edges: payload.partial_histogram_bins,
+         counts: payload.partial_histogram_counts,
+       };
+   }
+   ```
+
+Phase C – Progress component persistence (0.5 dev-hour)
+1. In `SimulationResultsDisplay.jsx` **always render** `<UnifiedProgressTracker>`.
+   Remove condition `status!=='running'`.
+2. When `hasRunningSimulations === false` show 100 % green bar.
+
+Phase D – Histogram component (1 dev-hour)
+1. Accept prop `draftHistogram`.
+2. While `status==='running' && draftHistogram` use it; else final histogram.
+3. Add simple fade animation on update (CSS).
+
+Phase E – QA (1 dev-hour)
+1. Two browsers, two users → run sims concurrently; verify:
+   • Progress bar never disappears.
+   • Histogram bars grow every few seconds.
+   • No console errors / memory leaks.
+2. Measure network: ensure polling packets < 30 KB.
+
+Deployment
+-----------
+• Backend: bind-mounted code → `docker-compose restart backend`.
+• Frontend: `npm run build` then `docker-compose restart frontend`.
+
+Rollback
+--------
+• Feature guarded by `ENABLE_LIVE_HISTO` env flag; default false.
+
+Estimated effort: ≈ 5 dev-hours.
+Done ✅ 

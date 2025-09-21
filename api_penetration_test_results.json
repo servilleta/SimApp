@@ -1,0 +1,197 @@
+{
+  "timestamp": "2025-09-19T11:43:54.665148",
+  "target_api": "http://localhost:9090/api",
+  "vulnerabilities": [
+    {
+      "endpoint": "/admin/users",
+      "type": "Improper Error Handling",
+      "severity": "medium",
+      "description": "Unexpected response for unauthenticated request",
+      "evidence": "Status: 404 (expected 401/403)",
+      "remediation": "Return proper HTTP status codes for auth failures",
+      "timestamp": "2025-09-19T11:43:55.051448"
+    },
+    {
+      "endpoint": "/admin/simulations",
+      "type": "Improper Error Handling",
+      "severity": "medium",
+      "description": "Unexpected response for unauthenticated request",
+      "evidence": "Status: 404 (expected 401/403)",
+      "remediation": "Return proper HTTP status codes for auth failures",
+      "timestamp": "2025-09-19T11:43:55.061884"
+    },
+    {
+      "endpoint": "/admin/analytics",
+      "type": "Improper Error Handling",
+      "severity": "medium",
+      "description": "Unexpected response for unauthenticated request",
+      "evidence": "Status: 404 (expected 401/403)",
+      "remediation": "Return proper HTTP status codes for auth failures",
+      "timestamp": "2025-09-19T11:43:55.077384"
+    },
+    {
+      "endpoint": "/users/profile",
+      "type": "Improper Error Handling",
+      "severity": "medium",
+      "description": "Unexpected response for unauthenticated request",
+      "evidence": "Status: 404 (expected 401/403)",
+      "remediation": "Return proper HTTP status codes for auth failures",
+      "timestamp": "2025-09-19T11:43:55.089133"
+    },
+    {
+      "endpoint": "/simulations",
+      "type": "Improper Error Handling",
+      "severity": "medium",
+      "description": "Unexpected response for unauthenticated request",
+      "evidence": "Status: 404 (expected 401/403)",
+      "remediation": "Return proper HTTP status codes for auth failures",
+      "timestamp": "2025-09-19T11:43:55.101313"
+    },
+    {
+      "endpoint": "/files/upload",
+      "type": "Improper Error Handling",
+      "severity": "medium",
+      "description": "Unexpected response for unauthenticated request",
+      "evidence": "Status: 404 (expected 401/403)",
+      "remediation": "Return proper HTTP status codes for auth failures",
+      "timestamp": "2025-09-19T11:43:55.112050"
+    },
+    {
+      "endpoint": "/health",
+      "type": "Missing Security Header",
+      "severity": "medium",
+      "description": "Missing security header: Strict-Transport-Security",
+      "evidence": "Header not present in response",
+      "remediation": "Add Strict-Transport-Security header to all API responses",
+      "timestamp": "2025-09-19T11:43:55.213009"
+    },
+    {
+      "endpoint": "/auth/login",
+      "type": "Missing Security Header",
+      "severity": "medium",
+      "description": "Missing security header: Strict-Transport-Security",
+      "evidence": "Header not present in response",
+      "remediation": "Add Strict-Transport-Security header to all API responses",
+      "timestamp": "2025-09-19T11:43:55.219084"
+    },
+    {
+      "endpoint": "/simulations",
+      "type": "Missing Security Header",
+      "severity": "medium",
+      "description": "Missing security header: Strict-Transport-Security",
+      "evidence": "Header not present in response",
+      "remediation": "Add Strict-Transport-Security header to all API responses",
+      "timestamp": "2025-09-19T11:43:55.224658"
+    },
+    {
+      "endpoint": "/admin/debug",
+      "type": "Information Disclosure",
+      "severity": "medium",
+      "description": "Sensitive information exposed at /admin/debug",
+      "evidence": "Status: 200, Contains: root",
+      "remediation": "Remove or secure information disclosure endpoints",
+      "timestamp": "2025-09-19T11:44:01.577731"
+    },
+    {
+      "endpoint": "/.env",
+      "type": "Information Disclosure",
+      "severity": "medium",
+      "description": "Sensitive information exposed at /.env",
+      "evidence": "Status: 200, Contains: root",
+      "remediation": "Remove or secure information disclosure endpoints",
+      "timestamp": "2025-09-19T11:44:01.597096"
+    },
+    {
+      "endpoint": "/config",
+      "type": "Information Disclosure",
+      "severity": "medium",
+      "description": "Sensitive information exposed at /config",
+      "evidence": "Status: 200, Contains: root",
+      "remediation": "Remove or secure information disclosure endpoints",
+      "timestamp": "2025-09-19T11:44:01.605858"
+    },
+    {
+      "endpoint": "/status",
+      "type": "Information Disclosure",
+      "severity": "medium",
+      "description": "Sensitive information exposed at /status",
+      "evidence": "Status: 200, Contains: root",
+      "remediation": "Remove or secure information disclosure endpoints",
+      "timestamp": "2025-09-19T11:44:01.618918"
+    },
+    {
+      "endpoint": "/info",
+      "type": "Information Disclosure",
+      "severity": "medium",
+      "description": "Sensitive information exposed at /info",
+      "evidence": "Status: 200, Contains: root",
+      "remediation": "Remove or secure information disclosure endpoints",
+      "timestamp": "2025-09-19T11:44:01.627719"
+    },
+    {
+      "endpoint": "/version",
+      "type": "Information Disclosure",
+      "severity": "medium",
+      "description": "Sensitive information exposed at /version",
+      "evidence": "Status: 200, Contains: root",
+      "remediation": "Remove or secure information disclosure endpoints",
+      "timestamp": "2025-09-19T11:44:01.637618"
+    },
+    {
+      "endpoint": "/admin/phpinfo.php",
+      "type": "Information Disclosure",
+      "severity": "medium",
+      "description": "Sensitive information exposed at /admin/phpinfo.php",
+      "evidence": "Status: 200, Contains: root",
+      "remediation": "Remove or secure information disclosure endpoints",
+      "timestamp": "2025-09-19T11:44:01.645272"
+    },
+    {
+      "endpoint": "/server-status",
+      "type": "Information Disclosure",
+      "severity": "medium",
+      "description": "Sensitive information exposed at /server-status",
+      "evidence": "Status: 200, Contains: root",
+      "remediation": "Remove or secure information disclosure endpoints",
+      "timestamp": "2025-09-19T11:44:01.654315"
+    },
+    {
+      "endpoint": "/admin/config.json",
+      "type": "Information Disclosure",
+      "severity": "medium",
+      "description": "Sensitive information exposed at /admin/config.json",
+      "evidence": "Status: 200, Contains: root",
+      "remediation": "Remove or secure information disclosure endpoints",
+      "timestamp": "2025-09-19T11:44:01.662133"
+    }
+  ],
+  "test_summary": {},
+  "recommendations": [
+    "Implement comprehensive input validation and sanitization",
+    "Use parameterized queries to prevent SQL injection",
+    "Implement proper authentication and authorization controls",
+    "Configure security headers on all API responses",
+    "Implement rate limiting to prevent abuse",
+    "Regular security testing and code reviews",
+    "Use HTTPS for all API communications",
+    "Implement proper error handling without information disclosure"
+  ],
+  "summary": {
+    "total_vulnerabilities": 18,
+    "critical_vulnerabilities": 0,
+    "high_vulnerabilities": 0,
+    "medium_vulnerabilities": 18,
+    "low_vulnerabilities": 0,
+    "risk_score": 72,
+    "security_level": "LOW"
+  },
+  "test_categories": {
+    "authentication_tested": true,
+    "injection_tested": true,
+    "authorization_tested": true,
+    "input_validation_tested": true,
+    "security_headers_tested": true,
+    "rate_limiting_tested": true,
+    "information_disclosure_tested": true
+  }
+}

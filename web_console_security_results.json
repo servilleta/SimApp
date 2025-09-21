@@ -1,0 +1,46 @@
+{
+  "timestamp": "2025-09-19T11:57:20.770315",
+  "target": "http://localhost:9090",
+  "vulnerabilities": [
+    {
+      "category": "Code Tampering",
+      "type": "No Anti-Tampering Protections",
+      "severity": "medium",
+      "description": "No JavaScript anti-tampering protections detected",
+      "evidence": "Missing Object.freeze, strict mode, or function protection",
+      "remediation": "Implement JavaScript protection mechanisms against tampering",
+      "timestamp": "2025-09-19T11:57:20.870766"
+    },
+    {
+      "category": "Developer Tools",
+      "type": "No DevTools Protection",
+      "severity": "low",
+      "description": "No developer tools detection or protection",
+      "evidence": "Missing devtools detection mechanisms",
+      "remediation": "Consider implementing developer tools detection for sensitive applications",
+      "timestamp": "2025-09-19T11:57:20.886924"
+    }
+  ],
+  "exposed_secrets": [],
+  "client_side_issues": [],
+  "console_risks": [],
+  "summary": {
+    "total_vulnerabilities": 2,
+    "critical_vulnerabilities": 0,
+    "high_vulnerabilities": 0,
+    "medium_vulnerabilities": 1,
+    "low_vulnerabilities": 1,
+    "risk_score": 5,
+    "console_hackable": false
+  },
+  "recommendations": [
+    "Implement Content Security Policy with strict 'unsafe-eval' restrictions",
+    "Remove sensitive data from client-side code",
+    "Use server-side authentication validation only",
+    "Minimize API endpoint exposure in frontend code",
+    "Implement JavaScript anti-tampering protections",
+    "Use secure browser storage practices",
+    "Disable source maps in production",
+    "Remove debug code from production builds"
+  ]
+}

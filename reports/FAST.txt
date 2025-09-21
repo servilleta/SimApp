@@ -1,0 +1,102 @@
+# HOW TO MAKE THE MONTE-CARLO PIPELINE **FAST** 🚀
+
+This document is a concise, implementation-ready checklist for eliminating the slow "Initializing…" phase and achieving sub-second simulation start-up.
+
+--------------------------------------------------------------------
+1. Persist uploads & artefacts
+--------------------------------------------------------------------
+1.1  Declare a named volume in *docker-compose.yml*
+```
+volumes:
+  excel_cache:
+```
+1.2  Mount it in the backend service
+```
+backend:
+  volumes:
+    - excel_cache:/app/uploads   # Arrow + JSON live here
+```
+Result: Arrow/JSON files survive container rebuilds.
+
+--------------------------------------------------------------------
+2. Streamed openpyxl parsing (3× speed-up)
+--------------------------------------------------------------------
+*backend/excel_parser/service.py*
+```
+wb = openpyxl.load_workbook(BytesIO(content),
+                            data_only=False,
+                            read_only=True)   # ← new flag
+```
+• Iterate with `worksheet.iter_rows(values_only=False)` – no row/col index maths.
+• Drop the second "values" workbook; read formula & cached value from the same stream (cell.value vs cell.internal_value).
+
+--------------------------------------------------------------------
+3. Produce a Feather (Arrow) cache on first parse
+--------------------------------------------------------------------
+```
+import pyarrow as pa, pyarrow.feather as feather
+rows = []
+for sheet in wb.worksheets:
+    for cell in sheet.iter_rows(values_only=False):
+        rows.append({
+            'sheet': sheet.title,
+            'coord': cell.coordinate,
+            'value': cell.value,
+            'formula': cell.value if cell.data_type=='f' else None
+        })
+feather.write_feather(pa.Table.from_pylist(rows),
+        f"{UPLOAD_DIR}/{file_id}.feather", compression='lz4')
+```
+Delete the giant grid-data JSON; keep only formulas JSON + Feather.
+
+--------------------------------------------------------------------
+4. Arrow first-load path (milliseconds)
+--------------------------------------------------------------------
+In `get_all_parsed_sheets_data()`
+```
+arrow = Path(f"{UPLOAD_DIR}/{file_id}.feather")
+if arrow.exists():
+    tbl = feather.read_table(arrow, memory_map=True)
+    return arrow_table_to_models(tbl)  # reconstruct SheetData
+```
+Parsing becomes: mmap 30-50 ms → rebuild models 100-150 ms.
+
+--------------------------------------------------------------------
+5. Pre-parse endpoint + frontend hook
+--------------------------------------------------------------------
+Backend
+```
+@router.post("/excel/parse/{file_id}")
+async def preparse(file_id: str, background_tasks: BackgroundTasks):
+    background_tasks.add_task(_ensure_arrow_exists, file_id)
+    return {"message": "Parsing started"}
+```
+Frontend
+• After successful upload, call `/excel/parse/{file_id}`. 
+• Subscribe to Redis progress channel (already used for simulations).  
+  ‑ stage: "Parsing", progress 0→100 %.
+
+--------------------------------------------------------------------
+6. Optional extras
+--------------------------------------------------------------------
+• Use Arrow dataset + partition by sheet for very large workbooks.
+• Compress with Zstandard if disk space matters (>200 MB sheets).
+• Persist dependency graph (`evaluation_order.pkl`) beside Feather for instant load.
+
+--------------------------------------------------------------------
+Expected performance after steps 1-5
+--------------------------------------------------------------------
+First run (big 30 MB workbook)  ≈ 12–15 s (one-off).  
+Subsequent simulations           < 2 s start-to-finish (100 iterations, GPU).  
+CPU-only systems                 ~10 s.
+
+--------------------------------------------------------------------
+Checklist for merge request
+--------------------------------------------------------------------
+☐ docker-compose volume added  
+☐ `service.py` read_only flag + Arrow writer  
+☐ Feather load path implemented  
+☐ `/excel/parse` endpoint + background task  
+☐ React: call parse after upload & show progress  
+☐ Remove JSON grid dump to save disk  
+☐ Regression test: upload, parse, simulate twice (<3 s second run) 

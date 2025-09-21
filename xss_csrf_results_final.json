@@ -1,0 +1,32 @@
+{
+  "summary": {
+    "total_xss_vulnerabilities": 1,
+    "total_csrf_vulnerabilities": 0,
+    "xss_contexts": {
+      "csp": 1
+    },
+    "endpoints_tested": 0
+  },
+  "xss_vulnerabilities": [
+    {
+      "endpoint": "/",
+      "payload": "unsafe_csp_data:",
+      "context": "csp",
+      "evidence": "Unsafe CSP directive found: data:",
+      "timestamp": "2025-09-19T11:03:29.260155"
+    }
+  ],
+  "csrf_vulnerabilities": [],
+  "recommendations": [
+    "Implement proper output encoding for all user input",
+    "Use Content Security Policy (CSP) to prevent XSS execution",
+    "Implement CSRF tokens for all state-changing operations",
+    "Validate and sanitize all user inputs on server side",
+    "Use HTTP-only and Secure flags for session cookies",
+    "Implement proper input validation with allowlists",
+    "Use template engines with automatic escaping",
+    "Set X-Frame-Options header to prevent clickjacking",
+    "Regular security code reviews focusing on input/output handling",
+    "Implement proper session management"
+  ]
+}

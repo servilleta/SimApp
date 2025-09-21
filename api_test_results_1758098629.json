@@ -1,0 +1,19 @@
+{
+  "timestamp": "2025-09-17 10:43:49",
+  "server": "http://209.51.170.185:8000",
+  "model_id": "mdl_f95a6f04607c4273",
+  "simulation_id": "b2b_sim_f953709d04234c47",
+  "results": {
+    "Health Check": true,
+    "File Upload": true,
+    "Simulation Request": true,
+    "Progress Monitoring": false,
+    "Results Retrieval": false,
+    "Report Downloads": true
+  },
+  "summary": {
+    "passed": 4,
+    "total": 6,
+    "success_rate": 0.6666666666666666
+  }
+}

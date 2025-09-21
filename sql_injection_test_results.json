@@ -1,0 +1,71 @@
+{
+  "summary": {
+    "total_vulnerabilities": 0,
+    "vulnerability_types": {},
+    "endpoints_tested": 8,
+    "total_payloads_tested": 396
+  },
+  "vulnerabilities": [],
+  "tested_endpoints": [
+    {
+      "endpoint": "/auth/login",
+      "method": "POST",
+      "payloads_tested": 72,
+      "timestamp": "2025-09-19T11:32:13.518943"
+    },
+    {
+      "endpoint": "/auth/register",
+      "method": "POST",
+      "payloads_tested": 72,
+      "timestamp": "2025-09-19T11:32:25.622754"
+    },
+    {
+      "endpoint": "/auth/reset-password",
+      "method": "POST",
+      "payloads_tested": 72,
+      "timestamp": "2025-09-19T11:32:37.763877"
+    },
+    {
+      "endpoint": "/simulations",
+      "method": "POST",
+      "payloads_tested": 36,
+      "timestamp": "2025-09-19T11:32:45.812590"
+    },
+    {
+      "endpoint": "/excel-parser/upload",
+      "method": "POST",
+      "payloads_tested": 36,
+      "timestamp": "2025-09-19T11:32:45.812602"
+    },
+    {
+      "endpoint": "/simulations/search",
+      "method": "GET",
+      "payloads_tested": 36,
+      "timestamp": "2025-09-19T11:32:49.708265"
+    },
+    {
+      "endpoint": "/users/profile",
+      "method": "GET",
+      "payloads_tested": 36,
+      "timestamp": "2025-09-19T11:32:53.704255"
+    },
+    {
+      "endpoint": "/files/list",
+      "method": "GET",
+      "payloads_tested": 36,
+      "timestamp": "2025-09-19T11:32:57.767749"
+    }
+  ],
+  "recommendations": [
+    "Use parameterized queries/prepared statements for all database operations",
+    "Implement proper input validation and sanitization",
+    "Use ORM frameworks that provide built-in SQL injection protection",
+    "Apply principle of least privilege for database user accounts",
+    "Enable database query logging for monitoring",
+    "Implement Web Application Firewall (WAF) to filter malicious requests",
+    "Regular security code reviews focusing on database interactions",
+    "Use stored procedures where appropriate",
+    "Validate and sanitize all user inputs on server side",
+    "Implement proper error handling to avoid information disclosure"
+  ]
+}

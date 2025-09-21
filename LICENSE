@@ -1,0 +1,43 @@
+Monte Carlo Simulation Platform License
+
+Copyright (c) 2024 Monte Carlo Platform Team
+
+This project contains both proprietary and open-source components:
+
+1. PROPRIETARY COMPONENTS
+   - Original platform code, business logic, and algorithms
+   - Configuration files and deployment scripts
+   - Documentation and proprietary assets
+
+2. OPEN-SOURCE COMPONENTS
+   - Third-party libraries and dependencies
+   - See /LICENSES/ directory for complete attribution
+   - See /legal/OPEN_SOURCE_LICENSES.md for detailed analysis
+
+PROPRIETARY LICENSE TERMS:
+- This software and associated documentation files (the "Software") are proprietary
+- Commercial use of the proprietary components requires a separate license agreement
+- Contact us for commercial licensing terms
+
+OPEN-SOURCE COMPLIANCE:
+- All third-party open-source components retain their original licenses
+- MIT, BSD, and Apache 2.0 licensed components permit commercial use
+- Complete license texts are provided in the /LICENSES/ directory
+- No GPL or copyleft licenses are used that would affect proprietary components
+
+For licensing questions or commercial use, contact: [contact information]
+
+THIRD-PARTY ATTRIBUTION:
+This software includes open-source components. See /LICENSES/ directory for complete
+attribution notices and license texts for all third-party components.
+
+KEY COMPLIANCE SUMMARY:
+✅ Commercial use permitted for all dependencies
+✅ No licensing fees required for any component  
+✅ No copyleft contamination
+✅ Full modification and distribution rights
+✅ International license compatibility
+
+
+
+

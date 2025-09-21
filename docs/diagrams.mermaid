@@ -1,0 +1,232 @@
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#3498db', 'primaryTextColor':'#2c3e50', 'primaryBorderColor':'#2980b9', 'lineColor':'#34495e'}}}%%
+
+graph TB
+    subgraph "Frontend Layer"
+        A[Excel Upload Component] --> B[Variable Setup Component]
+        B --> C[Progress Monitor Component]
+        C --> D[Results Display Component]
+    end
+    
+    subgraph "API Layer"
+        E[FastAPI Router] --> F[Background Tasks]
+        F --> G[Authentication Middleware]
+    end
+    
+    subgraph "Ultra Engine"
+        H[Dependency Analyzer] --> I[GPU Memory Manager]
+        I --> J[Monte Carlo Executor]
+        J --> K[Results Processor]
+    end
+    
+    subgraph "Data Layer"
+        L[(Redis Cache)] 
+        M[(PostgreSQL DB)]
+    end
+    
+    A --> E
+    E --> H
+    H --> L
+    K --> L
+    K --> M
+    D --> L
+
+---
+
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#e74c3c', 'primaryTextColor':'#2c3e50'}}}%%
+
+sequenceDiagram
+    participant U as User
+    participant F as Frontend
+    participant API as FastAPI
+    participant UE as Ultra Engine
+    participant GPU as GPU/CUDA
+    participant R as Redis
+    participant DB as PostgreSQL
+    
+    U->>F: Upload Excel File
+    F->>API: POST /upload
+    API->>API: Validate & Parse
+    API-->>F: File Metadata
+    
+    U->>F: Configure Simulation
+    F->>API: POST /simulations/run
+    API->>UE: Initialize Ultra Engine
+    UE->>GPU: Setup Memory Pools
+    GPU-->>UE: Memory Allocated
+    
+    UE->>GPU: Generate Random Variables
+    UE->>GPU: Execute Monte Carlo Loop
+    GPU-->>UE: Simulation Results
+    
+    UE->>R: Cache Progress Updates
+    UE->>DB: Store Final Results
+    UE-->>API: Simulation Complete
+    API-->>F: Results Available
+    F->>API: GET /results
+    API->>R: Check Cache
+    R-->>API: Cached Results
+    API-->>F: Display Results
+
+---
+
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#27ae60', 'primaryTextColor':'#2c3e50'}}}%%
+
+pie title GPU Memory Pool Distribution (8GB Total)
+    "Variables Pool (40%)" : 40
+    "Results Pool (30%)" : 30
+    "Lookup Tables (15%)" : 15
+    "Constants Pool (10%)" : 10
+    "Forecasting Pool (5%)" : 5
+
+---
+
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#9b59b6', 'primaryTextColor':'#2c3e50'}}}%%
+
+flowchart TD
+    A[Start Simulation] --> B{GPU Available?}
+    B -->|Yes| C[Ultra GPU Engine]
+    B -->|No| D[Enhanced CPU Engine]
+    
+    C --> E{GPU Error?}
+    E -->|No| F[GPU Processing Success]
+    E -->|Yes| D
+    
+    D --> G{Memory Error?}
+    G -->|No| H[CPU Processing Success]
+    G -->|Yes| I[Standard CPU Engine]
+    
+    I --> J{Critical Error?}
+    J -->|No| K[Basic Processing Success]
+    J -->|Yes| L[Graceful Degradation]
+    
+    F --> M[Return Full Results]
+    H --> M
+    K --> M
+    L --> N[Return Partial Results]
+
+---
+
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#f39c12', 'primaryTextColor':'#2c3e50'}}}%%
+
+gitgraph
+    commit id: "Excel Upload"
+    commit id: "File Validation"
+    commit id: "Parse Formulas"
+    
+    branch dependency-analysis
+    checkout dependency-analysis
+    commit id: "Build Graph"
+    commit id: "Topological Sort"
+    
+    checkout main
+    merge dependency-analysis
+    commit id: "GPU Initialization"
+    
+    branch monte-carlo
+    checkout monte-carlo
+    commit id: "Random Generation"
+    commit id: "Formula Evaluation"
+    commit id: "Results Calculation"
+    
+    checkout main
+    merge monte-carlo
+    commit id: "Cache Results"
+    commit id: "Display Results"
+
+---
+
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1abc9c', 'primaryTextColor':'#2c3e50'}}}%%
+
+graph LR
+    subgraph "Excel Processing Pipeline"
+        A[Excel File] --> B[openpyxl Parser]
+        B --> C[Formula Extraction]
+        B --> D[Data Grid Parsing]
+        C --> E[Dependency Graph]
+        D --> F[Constant Values]
+        E --> G[Execution Order]
+        F --> G
+        G --> H[Ultra Engine Ready]
+    end
+
+---
+
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#34495e', 'primaryTextColor':'#ecf0f1'}}}%%
+
+classDiagram
+    class UltraMonteCarloEngine {
+        +iterations: int
+        +simulation_id: str
+        +gpu_capabilities: GPUCapabilities
+        +gpu_random_generator: UltraGPURandomGenerator
+        +results_database: UltraResultsDatabase
+        +run_simulation() Dict
+        +set_progress_callback() void
+        +get_sensitivity_analysis() Dict
+    }
+    
+    class GPUManager {
+        +memory_fraction: float
+        +gpu_available: bool
+        +memory_pools: Dict
+        +total_memory_mb: int
+        +initialize() void
+        +allocate_memory() void
+        +cleanup() void
+    }
+    
+    class DependencyAnalyzer {
+        +all_formulas: Dict
+        +mc_input_cells: Set
+        +build_dependency_graph() Graph
+        +get_evaluation_order() List
+        +detect_circular_deps() bool
+    }
+    
+    UltraMonteCarloEngine --> GPUManager
+    UltraMonteCarloEngine --> DependencyAnalyzer
+    GPUManager --> "5" MemoryPool
+    DependencyAnalyzer --> "1000+" FormulaNode
+
+---
+
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#e67e22', 'primaryTextColor':'#2c3e50'}}}%%
+
+timeline
+    title Monte Carlo Platform Development Timeline
+    
+    section Foundation
+        Excel Parser Implementation    : openpyxl integration
+                                      : Multi-sheet support
+                                      : Formula extraction
+        
+        FastAPI Backend               : RESTful API design
+                                     : Authentication system
+                                     : Background task processing
+    
+    section Core Engine
+        Dependency Analysis           : Graph-based formula parsing
+                                     : Topological sorting
+                                     : Circular dependency detection
+        
+        Monte Carlo Engine            : CPU-based simulation
+                                     : Statistical calculations
+                                     : Results visualization
+    
+    section GPU Acceleration
+        CUDA Integration             : CuPy framework
+                                    : GPU memory management
+                                    : Custom kernels
+        
+        Ultra Engine                 : GPU-accelerated simulation
+                                    : Memory pool optimization
+                                    : Performance benchmarking
+    
+    section Production
+        Scalability Features         : Redis caching
+                                    : PostgreSQL persistence
+                                    : Load balancing
+        
+        Enterprise Features          : Security hardening
+                                    : Audit logging
+                                    : Admin dashboard

@@ -1,0 +1,19 @@
+Issue Summary: ✅ **RESOLVED**
+
+A multi-layered bug was identified, starting with a race condition in the frontend that caused the simulation to appear to run twice, accompanied by an erratic progress bar. Initial fixes for this issue then revealed a `401 Unauthorized` error, which, once resolved, led to a `422 Unprocessable Entity` error.
+
+The core problems were:
+1.  **Race Condition:** Incorrect state management of simulation IDs in `SimulationProgress.jsx` created two competing polling processes—one for a temporary ID and another for the real one—resulting in inconsistent UI updates. ✅ **FIXED**
+2.  **Authentication Failure:** A refactor of the simulation logic to use the native `fetch` API inadvertently bypassed the `axios` interceptor responsible for adding the `Authorization` header to requests. ✅ **FIXED**
+3.  **Data Validation Error:** Multiple data structure mismatches including `resultCells` array vs single fields, and variable property names (`min` vs `min_value`, `likely` vs `most_likely`, etc.), causing 422 validation failures. 🎯 **COMPLETELY FIXED**
+
+Solution Summary: ✅ **ALL FIXES APPLIED & TESTED**
+
+The solution involved a series of targeted fixes to address each layer of the problem:
+1.  **Race Condition Resolution:** The `useEffect` hook in `SimulationProgress.jsx` was refactored to include a cleanup mechanism (`isEffectActive` flag) that prevents stale polling requests from updating the component's state. The dependency array was also simplified to prevent unnecessary re-renders. ✅ **IMPLEMENTED**
+2.  **Authentication Fix:** The `simulationSlice.js` was modified to use a shared `apiClient` (`axios` instance) instead of the native `fetch` API. An interceptor was added to this `apiClient` in `api.js` to automatically attach the `Authorization` header to all outgoing requests. ✅ **IMPLEMENTED**
+3.  **Data Validation Correction:** The `runSimulation` thunk in `simulationSlice.js` was updated with a complete variable transformation system that maps frontend data structures to backend schema requirements, including proper field name conversion (`min` → `min_value`, `likely` → `most_likely`, etc.) and comprehensive validation, completely resolving all `422` errors. 🎯 **IMPLEMENTED WITH COMPLETE TRANSFORMATION SYSTEM**
+
+**STATUS**: 🎉 **ALL BUGS RESOLVED** - System fully operational with complete Docker rebuild completed.
+**Latest Update**: Full Docker rebuild with cache clear completed successfully - all bug fixes applied.
+**Documentation**: See `BUG_FIXES_APPLIED.md` for comprehensive details. 

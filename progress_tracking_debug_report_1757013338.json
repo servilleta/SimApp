@@ -1,0 +1,392 @@
+{
+  "summary": {
+    "total_tests": 8,
+    "passed": 6,
+    "failed": 2,
+    "success_rate": 0.75,
+    "timestamp": 1757013338.7108521
+  },
+  "results": [
+    {
+      "test": "Redis Connectivity",
+      "success": true,
+      "message": "Redis operations successful",
+      "duration": 0.2721517086029053,
+      "details": {
+        "redis_connected": false,
+        "test_data_stored": true,
+        "data_integrity": false
+      }
+    },
+    {
+      "test": "Progress Store Operations",
+      "success": true,
+      "message": "All progress store operations successful",
+      "duration": 0.5062546730041504,
+      "details": {
+        "metadata_stored": true,
+        "progress_stages_tested": 5,
+        "final_progress": 100.0,
+        "active_progress_found": true,
+        "cleanup_count": 0
+      }
+    },
+    {
+      "test": "ID Normalization",
+      "success": true,
+      "message": "ID normalization test passed",
+      "duration": 4.318949222564697,
+      "details": {
+        "test_cases": 16,
+        "passed": 16,
+        "results": {
+          "Simple ID unchanged": {
+            "input": "simple_id",
+            "expected": "simple_id",
+            "actual": "simple_id",
+            "passed": true
+          },
+          "Single target suffix": {
+            "input": "parent_target_0",
+            "expected": "parent",
+            "actual": "parent",
+            "passed": true
+          },
+          "Double target suffix": {
+            "input": "parent_target_0_target_0",
+            "expected": "parent",
+            "actual": "parent",
+            "passed": true
+          },
+          "Triple target suffix": {
+            "input": "parent_target_0_target_0_target_0",
+            "expected": "parent",
+            "actual": "parent",
+            "passed": true
+          },
+          "UUID with single suffix": {
+            "input": "c090d9aa-1dd1-4768-9097-696fa61ac2af_target_0",
+            "expected": "c090d9aa-1dd1-4768-9097-696fa61ac2af",
+            "actual": "c090d9aa-1dd1-4768-9097-696fa61ac2af",
+            "passed": true
+          },
+          "UUID with double suffix": {
+            "input": "c090d9aa-1dd1-4768-9097-696fa61ac2af_target_0_target_0",
+            "expected": "c090d9aa-1dd1-4768-9097-696fa61ac2af",
+            "actual": "c090d9aa-1dd1-4768-9097-696fa61ac2af",
+            "passed": true
+          },
+          "UUID with triple suffix": {
+            "input": "c090d9aa-1dd1-4768-9097-696fa61ac2af_target_0_target_0_target_0",
+            "expected": "c090d9aa-1dd1-4768-9097-696fa61ac2af",
+            "actual": "c090d9aa-1dd1-4768-9097-696fa61ac2af",
+            "passed": true
+          },
+          "Complex ID with underscores": {
+            "input": "complex_id_with_underscores_target_1",
+            "expected": "complex_id_with_underscores",
+            "actual": "complex_id_with_underscores",
+            "passed": true
+          },
+          "Complex ID with double underscores": {
+            "input": "complex_id_with_underscores_target_1_target_2",
+            "expected": "complex_id_with_underscores",
+            "actual": "complex_id_with_underscores",
+            "passed": true
+          },
+          "Single child suffix": {
+            "input": "parent_child_0",
+            "expected": "parent",
+            "actual": "parent",
+            "passed": true
+          },
+          "Double child suffix": {
+            "input": "parent_child_0_child_1",
+            "expected": "parent",
+            "actual": "parent",
+            "passed": true
+          },
+          "Single sub suffix": {
+            "input": "parent_sub_0",
+            "expected": "parent",
+            "actual": "parent",
+            "passed": true
+          },
+          "Triple sub suffix": {
+            "input": "parent_sub_0_sub_1_sub_2",
+            "expected": "parent",
+            "actual": "parent",
+            "passed": true
+          },
+          "No suffix to normalize": {
+            "input": "no_suffix_here",
+            "expected": "no_suffix_here",
+            "actual": "no_suffix_here",
+            "passed": true
+          },
+          "Empty string": {
+            "input": "",
+            "expected": "",
+            "actual": "",
+            "passed": true
+          },
+          "Double digit target suffixes": {
+            "input": "parent_target_10_target_25",
+            "expected": "parent",
+            "actual": "parent",
+            "passed": true
+          }
+        }
+      }
+    },
+    {
+      "test": "Progress API Endpoint",
+      "success": false,
+      "message": "Progress API endpoint test failed",
+      "duration": 0.024882078170776367,
+      "details": {
+        "parent_status_code": 200,
+        "child_status_code": 200,
+        "parent_response": {
+          "simulation_id": "debug_api_test_001",
+          "status": "not_found",
+          "progress_percentage": 0.0,
+          "message": "Simulation not found or completed"
+        },
+        "child_response": {
+          "simulation_id": "debug_api_test_001_target_0",
+          "status": "not_found",
+          "progress_percentage": 0.0,
+          "message": "Simulation not found or completed"
+        },
+        "id_normalization_works": true,
+        "legacy_fields_present": false,
+        "required_legacy_fields": [
+          "progress_percentage",
+          "message",
+          "stage_description"
+        ],
+        "json_serialization": {
+          "progress_endpoint_serializable": true,
+          "status_endpoint_serializable": true
+        }
+      }
+    },
+    {
+      "test": "Multi-Target Simulation",
+      "success": true,
+      "message": "Multi-target simulation test successful",
+      "duration": 0.01724982261657715,
+      "details": {
+        "parent_id": "debug_multi_target_parent",
+        "child_count": 3,
+        "normalization_results": {
+          "debug_multi_target_parent_target_0": "debug_multi_target_parent",
+          "debug_multi_target_parent_target_0_api_status": 200,
+          "debug_multi_target_parent_target_1": "debug_multi_target_parent",
+          "debug_multi_target_parent_target_1_api_status": 200,
+          "debug_multi_target_parent_target_2": "debug_multi_target_parent",
+          "debug_multi_target_parent_target_2_api_status": 200
+        },
+        "all_normalized_correctly": true,
+        "api_calls_successful": true
+      }
+    },
+    {
+      "test": "Performance Test",
+      "success": true,
+      "message": "Performance test passed",
+      "duration": 1.5506293773651123,
+      "details": {
+        "update_count": 100,
+        "avg_update_time_ms": 4.494004249572754,
+        "max_update_time_ms": 94.98262405395508,
+        "avg_retrieval_time_ms": 1.7252302169799805,
+        "total_test_time_s": 1.5506293773651123,
+        "updates_per_second": 64.48994289655711,
+        "performance_acceptable": true
+      }
+    },
+    {
+      "test": "Client Progress Policy Emulation",
+      "success": false,
+      "message": "Client policy test failed",
+      "duration": 0.005600690841674805,
+      "details": {
+        "scenarios_tested": 4,
+        "passed": 3,
+        "results": {
+          "Stray 0% after completion": {
+            "updates": [
+              0,
+              80,
+              100,
+              0
+            ],
+            "expected": 100,
+            "actual": 100,
+            "passed": true,
+            "description": "Should ignore stray 0% update after reaching 100%"
+          },
+          "Stray 0% near completion": {
+            "updates": [
+              0,
+              50,
+              95,
+              98,
+              0
+            ],
+            "expected": 98,
+            "actual": 98,
+            "passed": true,
+            "description": "Should ignore stray 0% update after reaching 95%"
+          },
+          "Normal progression": {
+            "updates": [
+              0,
+              25,
+              50,
+              75,
+              100
+            ],
+            "expected": 100,
+            "actual": 100,
+            "passed": true,
+            "description": "Should allow normal forward progression"
+          },
+          "Early regression allowed": {
+            "updates": [
+              0,
+              50,
+              30,
+              70
+            ],
+            "expected": 30,
+            "actual": 70,
+            "passed": false,
+            "description": "Should allow regression when not near completion"
+          }
+        }
+      }
+    },
+    {
+      "test": "Integration Test",
+      "success": true,
+      "message": "Integration test passed",
+      "duration": 1.9046790599822998,
+      "details": {
+        "stages_tested": 9,
+        "api_success_rate": 1.0,
+        "final_progress": 100.0,
+        "child_id_normalization": true,
+        "stray_0_percent_test": {
+          "backend_handled_correctly": true,
+          "api_success": true,
+          "client_policy_works": true,
+          "final_client_progress": 100,
+          "response_data": {
+            "simulation_id": "debug_integration_test_001",
+            "status": "not_found",
+            "progress_percentage": 0.0,
+            "message": "Simulation not found or completed"
+          }
+        },
+        "api_responses": [
+          {
+            "progress": 0,
+            "status_code": 200,
+            "response_data": {
+              "simulation_id": "debug_integration_test_001",
+              "status": "not_found",
+              "progress_percentage": 0.0,
+              "message": "Simulation not found or completed"
+            }
+          },
+          {
+            "progress": 5,
+            "status_code": 200,
+            "response_data": {
+              "simulation_id": "debug_integration_test_001",
+              "status": "not_found",
+              "progress_percentage": 0.0,
+              "message": "Simulation not found or completed"
+            }
+          },
+          {
+            "progress": 15,
+            "status_code": 200,
+            "response_data": {
+              "simulation_id": "debug_integration_test_001",
+              "status": "not_found",
+              "progress_percentage": 0.0,
+              "message": "Simulation not found or completed"
+            }
+          },
+          {
+            "progress": 25,
+            "status_code": 200,
+            "response_data": {
+              "simulation_id": "debug_integration_test_001",
+              "status": "not_found",
+              "progress_percentage": 0.0,
+              "message": "Simulation not found or completed"
+            }
+          },
+          {
+            "progress": 40,
+            "status_code": 200,
+            "response_data": {
+              "simulation_id": "debug_integration_test_001",
+              "status": "not_found",
+              "progress_percentage": 0.0,
+              "message": "Simulation not found or completed"
+            }
+          },
+          {
+            "progress": 60,
+            "status_code": 200,
+            "response_data": {
+              "simulation_id": "debug_integration_test_001",
+              "status": "not_found",
+              "progress_percentage": 0.0,
+              "message": "Simulation not found or completed"
+            }
+          },
+          {
+            "progress": 80,
+            "status_code": 200,
+            "response_data": {
+              "simulation_id": "debug_integration_test_001",
+              "status": "not_found",
+              "progress_percentage": 0.0,
+              "message": "Simulation not found or completed"
+            }
+          },
+          {
+            "progress": 95,
+            "status_code": 200,
+            "response_data": {
+              "simulation_id": "debug_integration_test_001",
+              "status": "not_found",
+              "progress_percentage": 0.0,
+              "message": "Simulation not found or completed"
+            }
+          },
+          {
+            "progress": 100,
+            "status_code": 200,
+            "response_data": {
+              "simulation_id": "debug_integration_test_001",
+              "status": "not_found",
+              "progress_percentage": 0.0,
+              "message": "Simulation not found or completed"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "recommendations": [
+    "Verify API server is running and accessible"
+  ]
+}

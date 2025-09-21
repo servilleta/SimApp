@@ -1,0 +1,201 @@
+# NEW STALL-BUG ELIMINATION PLAN (v1.0 – Aug 2025)
+
+This plan replaces **STALPLAN.txt**.  It is built from a deep review of:
+•   STALLBUG.txt (full investigation log)
+•   STALPLAN.txt (30 previous phases)
+•   Current backend / frontend codebase (key modules inspected)
+
+The previous effort produced many partial fixes but never delivered a stable, generic solution.  The new plan focuses on **evidence-driven debugging, automated verification, and incremental hardening**.  Scope is limited to the Ultra engine & generic Excel models – per user rules no hard-coding for specific files.
+
+----------------------------------------------------------------------
+A. HIGH-LEVEL FINDINGS
+----------------------------------------------------------------------
+1. _GPU Validation Loop_  – `UltraMonteCarloEngine.benchmark_gpu_vs_cpu()` still fails statistical validation, causing silent termination (0 iterations) and false “completed” status.
+2. _Batch Monitor Fragility_  –  `monitor_batch_simulation()` tasks are created but sometimes never scheduled (event-loop context mismatch) or exit silently; parent progress therefore freezes at 50 %.
+3. _Progress-Store / WebSocket Layer_  – Duplicate notification removal in Phase 22 was correct, but progress propagation remains fragile and un-tested.
+4. _Frontend Timing_  – WebSocket connection is still launched **after** backend starts because the Redux thunk connects too late when React is busy.  Optimistic 50 % UI masks the defect.
+5. _Missing Automated Tests_  – No unit / integration tests cover “simulation actually runs”, “progress reaches client”, or “batch monitor aggregates continuously”.
+6. _Environment Drift_  – Multiple partial Docker rebuilds have left dependencies unsynchronised; reproducibility is poor.
+
+----------------------------------------------------------------------
+B. GUIDING PRINCIPLES
+----------------------------------------------------------------------
+1. Single source of truth for progress (Redis) → event driven → WebSocket broadcast.
+2. Fail **fast and loudly** – never mark a failed simulation as completed.
+3. Backend must be verifiably healthy **before** frontend logic is debugged.
+4. Add automated checks before every phase to prevent regressions.
+5. Respect user rules: no silent placeholders; consult before mock data; keep engine generic.
+
+----------------------------------------------------------------------
+C. EXECUTION PHASES
+----------------------------------------------------------------------
+
+PHASE 0 (Clean-room baseline, 2 h)
+0.1  `git clone` fresh repo; run `docker compose build --no-cache && docker compose up`.
+0.2  Create **integration smoke-test** (Pytest) that: uploads a 2-cell Excel model, requests 10 iterations, polls `/progress`, asserts ≥1 iteration executed.
+0.3  Fails right now → proves bug is reproduced.
+
+PHASE 1 (GPU Validation Hardening, 4 h)
+1.1  Add **verbose stats logging** inside `_validate_gpu_results` (mean, std, min, max, NaN count).
+1.2  If any numeric delta > tolerance ⇒ raise `GPUValidationError` (new class).
+1.3  Catch in `service.run_simulation_with_engine`.
+     •   Ask user: fallback to CPU Enhanced engine?  (No silent fallback per rules.)
+     •   For now: mark simulation **failed**; propagate to parent progress & client.
+1.4  Update unit test: failing GPU → status=="failed", progress==0.
+
+PHASE 2 (Batch Monitor Reliability, 3 h)
+2.1  Move `monitor_batch_simulation` to **dedicated asyncio task group** started in a FastAPI lifespan event to guarantee correct loop.
+2.2  Add heartbeat log every 2 s (`iteration` counter) so absence is detectable.
+2.3  Parent progress formula: average(child.progress) ignoring failed children.
+2.4  Write pyrotest covering: two fake children (running+failed) → parent progress 50 %, status `running`.
+
+PHASE 3 (Progress Store / WebSocket Contract Tests, 3 h)
+3.1  Wrap `ProgressStore.set_progress` with Pydantic model → schema enforcement.
+3.2  Add **async test**: create 20 fake updates → assert exactly 20 WebSocket messages received by test client (no duplicates).
+3.3  Throttle: max 10 msg / s per simulation (configurable) – guards against Phase 22 duplication regressions.
+
+PHASE 4 (Frontend Connection Race Fix, 2 h)
+4.1  In Redux thunk `runSimulation` **pre-connect** WebSocket **before** posting HTTP request (already partially done in Phase 27 but reverted).  Use native `WebSocket` directly; no `setTimeout`.
+4.2  Remove optimistic 50 % placeholder.  New behaviour:
+     •   While no real update received, show indeterminate spinner + “Waiting for backend …”.
+4.3  Add Cypress e2e test: start simulation → within 3 s UI shows first backend progress.
+
+PHASE 5 (End-to-End Acceptance Suite, 1 h)
+5.1  Scenarios: single-cell CPU, multi-cell CPU, GPU failure, GPU success (if hardware available), cancellation.
+5.2  Each scenario asserts: iterations >0, parent progress monotonic, frontend bar reaches 100 %.
+
+PHASE 6 (CI & Regression Guard, 2 h)
+6.1  Add GitHub Action pipeline running Pytest + Cypress on every PR.
+6.2  Cache Docker layers to reduce CI time.
+6.3  Block merge if any progress/monitor/GPU tests fail.
+
+PHASE 7 (Deployment & Monitoring, 2 h)
+7.1  Add `/metrics` endpoint exposing Prometheus counters: gpu_validation_failures, batch_monitor_heartbeats, websocket_clients.
+7.2  Grafana dashboard with 60 % stall alert (no progress >30 s while status==running).
+7.3  Final full `docker compose build --no-cache`, push images.
+
+----------------------------------------------------------------------
+D. SUCCESS CRITERIA
+----------------------------------------------------------------------
+•   **Backend:** For a 3-target, 1000-iteration run, Redis shows ≥3000 iterations aggregated, parent progress increments every ≤2 s.
+•   **Frontend:** User sees first real progress within 5 s, continuous bar motion, elapsed timer counts, no stall at 50/60 %.
+•   **Failure:** If GPU invalid, UI displays error “GPU validation failed – simulation not executed”, no false completion.
+•   **CI:** All automated tests green; any future regression breaks pipeline.
+
+----------------------------------------------------------------------
+E. RISK & MITIGATION
+----------------------------------------------------------------------
+Risk | Mitigation
+-----|-----------
+Unexpected CuPy numerical mismatch | Allow configurable tolerance; fallback to CPU after user confirmation.
+Asyncio task starvation | Upgrade to Python 3.11; use `asyncio.TaskGroup` which cancels on errors.
+WebSocket scaling | Introduce per-sim id topic in Redis PubSub (future) but keep simple for this fix.
+CI flakiness (GPU unavailable) | Tag GPU tests as optional; run on dedicated runner.
+
+----------------------------------------------------------------------
+F. NEXT ACTIONS (THIS WEEK)
+----------------------------------------------------------------------
+1. Approve CPU-fallback strategy or decide to block on GPU issues.
+2. Allocate 1 developer to complete Phases 0-3 (backend hardening).
+3. Allocate 1 developer to complete Phases 4-5 (frontend & tests).
+4. Sync daily; aim for full regression-free demo in 5 working days.
+
+----------------------------------------------------------------------
+**END OF PLAN** –  All tasks are time-boxed (~15 h total).  Strict evidence & test-driven progress will avoid the 30-phase churn experienced previously.
+
+----------------------------------------------------------------------
+APPENDIX – DEVELOPER EXECUTION GUIDE (DETAILED)
+----------------------------------------------------------------------
+This appendix translates each phase into concrete implementation steps, listing the exact files/modules to touch, the architectural rationale, and success‐verification hooks.  Hand it directly to an engineer starting work on the bug.
+
+A. FILE MAP (BY CONCERN)
+--------------------------------
+Backend – Core simulation & progress
+  • backend/simulation/engines/ultra_engine.py           ← GPU validation & fallback
+  • backend/simulation/service.py                        ← run_simulation*, monitor_batch_simulation, progress update
+  • backend/shared/progress_store.py                     ← set_progress(), WebSocket broadcast
+  • backend/websocket_manager.py                         ← send_progress_update(), connection tracking
+  • backend/simulation/progress_queue.py                 ← smoothing / interpolation
+  • backend/tests/…                                      ← NEW pytest suites (smoke + GPU + monitor)
+Frontend – Progress & WebSocket
+  • frontend/src/store/simulationSlice.js                ← runSimulation thunk (pre–WS connect)
+  • frontend/src/services/websocketService.js            ← connect(), throttle, error handling
+  • frontend/src/components/simulation/UnifiedProgressTracker.jsx ← optimistic placeholder removal
+  • frontend/src/components/simulation/ProgressSpinner.jsx ← NEW small component for indeterminate wait
+  • cypress/e2e/progress.spec.js                         ← NEW e2e checks
+Infrastructure / CI
+  • docker-compose.yml / Dockerfile                      ← ensure pydantic, pytest, cypress deps
+  • nginx/default.conf                                   ← leave untouched (validated OK)
+  • .github/workflows/ci.yml                             ← NEW pipeline running tests
+
+B. PHASE-BY-PHASE INSTRUCTIONS
+--------------------------------
+PHASE 0 – Baseline & Smoke Test
+  1. Clone clean repo and full rebuild.
+  2. Create tests/integration/test_smoke.py – uses FastAPI TestClient: upload minimal workbook (generated via openpyxl), POST /run, poll /progress until status!=pending, assert current_iteration>0.
+  3. Add to pytest.ini so `pytest -m smoke` can isolate quick run.
+
+PHASE 1 – GPU Validation Hardening
+  File: backend/simulation/engines/ultra_engine.py
+  • Add `_log_stats(arr, label)` helper logging mean/std/min/max/NaN.
+  • In `benchmark_gpu_vs_cpu()` call helper for gpu_result & cpu_result.
+  • Introduce `class GPUValidationError(RuntimeError): ...` in same file.
+  • If `abs(mean_gpu-mean_cpu) > 1e-4` OR any NaN: raise GPUValidationError.
+  File: backend/simulation/service.py
+  • Wrap Ultra run in try/except GPUValidationError.  On except: return `status="failed"`, propagate message; **do NOT** mark completed.  Optionally prompt user to enable CPU fallback via UI flag.
+  Tests: tests/engines/test_gpu_validation.py mocks gpuresult with NaNs, expects failure.
+
+PHASE 2 – Batch Monitor Reliability
+  File: backend/simulation/service.py
+  • Move `monitor_batch_simulation` out of request handler – register in FastAPI `@app.on_event("startup")` to create `asyncio.TaskGroup` reused for every parent.
+  • Inside monitor loop: every 2 s `logger.debug('heartbeat', iteration)`.
+  • Compute parent progress = sum(child.progress)/N_success, ignored failed.
+  • Publish via `update_simulation_progress(parent_id, …)`.
+  Tests: tests/batch/test_monitor.py uses asyncio loop & dummy Redis to assert 3 heartbeats within 6 s.
+
+PHASE 3 – Progress Store Contract & WS Throttle
+  File: backend/shared/progress_store.py
+  • Define `ProgressSchema = pydantic.BaseModel(...)` (progress_percentage, status, etc.).  Validate on every `set_progress`.
+  • Add rate limiter dictionary time-stamping last send; skip WS if > 0.1 s since previous for same sim.
+  Tests: tests/progress/test_ws_contract.py – push 20 updates, capture stubbed websocket; assert 20-len(received)<=2 (throttle OK).
+
+PHASE 4 – Frontend Race Fix
+  File: simulationSlice.js
+  • Inside `runSimulation` thunk (BEFORE fetch): `websocketService.connect(parentId)`.
+  • Remove optimistic 50 % progress lines in UnifiedProgressTracker → replace with `<ProgressSpinner/>` until first real message.
+  • Delete `setTimeout` wrappers.
+  Cypress: progress.spec.js – stub backend to delay first message 1 s; ensure spinner appears then real bar.
+
+PHASE 5 – End-to-End Acceptance
+  • Add pytest parametrised over engines & Excel sizes; assert iterations & final results.
+  • Cypress flows for cancel / GPU fail UI message.
+
+PHASE 6 – CI & Regression Guard
+  • Write `.github/workflows/ci.yml` running `docker compose up -d`, `pytest`, and headless Cypress.
+  • Cache `~/.cache/pip` and Docker layers.
+
+PHASE 7 – Deployment & Monitoring
+  • Add `/metrics` FastAPI route exporting Prometheus counters updated in ProgressStore and BatchMonitor.
+  • Grafana dashboard JSON exported to `monitoring/grafana/progress_dashboard.json`.
+
+C. WHY THIS SOLVES THE LAST ISSUES
+-----------------------------------
+• GPU silent failure no longer masquerades as success → eliminates false 60 % stall cause #1.
+• Batch monitor guaranteed to run in correct event loop with heartbeat → prevents parent progress freeze at 50 % (cause #2).
+• Progress store validation + throttle → stops duplicate spam and schema drift (cause #3).
+• Pre-connected WebSocket & removal of optimistic UI → user always receives first backend update in <3 s, no optical stall.
+• Automated tests/CI mean any future regression (task not scheduled, WS duplicate, GPU fail) blocks merge.
+
+D. ESTIMATED EFFORT RECAP
+---------------------------
+Phase 0  0.5 d
+Phase 1  1.0 d
+Phase 2  0.75 d
+Phase 3  0.75 d
+Phase 4  0.5 d
+Phase 5  0.25 d
+Phase 6  0.25 d
+Phase 7  0.25 d
+TOTAL     4.25 developer-days
+
+— End Appendix —

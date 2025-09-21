@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monte Carlo Platform Documentation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 20px;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 1.2em;
+        }
+        
+        .doc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+        }
+        
+        .doc-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .doc-card:hover {
+            border-color: #3498db;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .doc-card h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        
+        .doc-card p {
+            color: #555;
+            margin-bottom: 20px;
+        }
+        
+        .doc-link {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+        
+        .doc-link:hover {
+            background: #2980b9;
+        }
+        
+        .features {
+            background: #ecf0f1;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        .features h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .features ul {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+            list-style-type: none;
+            padding: 0;
+        }
+        
+        .features li {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .emoji {
+            font-size: 2em;
+            margin-bottom: 15px;
+        }
+        
+        .access-info {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 30px 0;
+        }
+        
+        .access-info h3 {
+            color: #155724;
+            margin-top: 0;
+        }
+        
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Monte Carlo Platform Documentation</h1>
+            <div class="subtitle">Complete Architecture & Technical Documentation</div>
+        </div>
+        
+        <div class="access-info">
+            <h3>🌐 How to Access These Documents</h3>
+            <p><strong>You're currently viewing via HTTP server on port 8080</strong></p>
+            <div class="code-block">
+# Your server IP: 10.64.9.179
+# Direct access: http://10.64.9.179:8080/docs/
+# SSH tunnel: ssh -L 8080:localhost:8080 username@10.64.9.179
+# Then browse: http://localhost:8080/docs/
+            </div>
+        </div>
+        
+        <div class="doc-grid">
+            <div class="doc-card">
+                <div class="emoji">🌐</div>
+                <h3>Interactive HTML Documentation</h3>
+                <p>Complete architecture documentation with styling, interactive TOC, and print optimization. Perfect for reading and printing.</p>
+                <a href="Monte_Carlo_Platform_Architecture.html" class="doc-link">View HTML Version</a>
+            </div>
+            
+            <div class="doc-card">
+                <div class="emoji">📝</div>
+                <h3>Markdown Documentation</h3>
+                <p>Technical documentation in Markdown format. Perfect for version control, GitHub integration, and technical teams.</p>
+                <a href="Monte_Carlo_Platform_Architecture.md" class="doc-link">View Markdown</a>
+            </div>
+            
+            <div class="doc-card">
+                <div class="emoji">📊</div>
+                <h3>Visual Diagrams</h3>
+                <p>Mermaid diagrams showing system architecture, data flows, GPU memory allocation, and component relationships.</p>
+                <a href="diagrams.mermaid" class="doc-link">View Diagrams</a>
+            </div>
+            
+            <div class="doc-card">
+                <div class="emoji">📋</div>
+                <h3>Executive Summary</h3>
+                <p>Condensed overview perfect for management presentations and PDF generation. Focus on business value and key metrics.</p>
+                <a href="ARCHITECTURE_SUMMARY.pdf.md" class="doc-link">View Summary</a>
+            </div>
+        </div>
+        
+        <div class="features">
+            <h3>📚 Documentation Features</h3>
+            <ul>
+                <li>🎯 Complete system architecture overview</li>
+                <li>⚡ GPU acceleration implementation details</li>
+                <li>🔄 Data flow from Excel import to results display</li>
+                <li>🛠️ Technology stack and performance benchmarks</li>
+                <li>🔐 Security and reliability frameworks</li>
+                <li>👨‍💻 Developer guides and API documentation</li>
+                <li>📊 Visual diagrams and flowcharts</li>
+                <li>🖨️ Print-optimized layouts</li>
+            </ul>
+        </div>
+        
+        <div class="features">
+            <h3>🎯 Best Viewing Options</h3>
+            <ul>
+                <li><strong>For Reading:</strong> HTML version with interactive navigation</li>
+                <li><strong>For Printing:</strong> HTML version with print button</li>
+                <li><strong>For Development:</strong> Markdown version for technical details</li>
+                <li><strong>For Presentations:</strong> Executive summary + diagrams</li>
+                <li><strong>For Visual Understanding:</strong> Mermaid diagrams</li>
+                <li><strong>For Management:</strong> Executive summary PDF</li>
+            </ul>
+        </div>
+        
+        <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #3498db;">
+            <p><strong>Server Status:</strong> HTTP Server running on port 8080</p>
+            <p><em>Documents updated: January 3, 2025</em></p>
+        </div>
+    </div>
+</body>
+</html>

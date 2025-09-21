@@ -1,0 +1,39 @@
+Selective Data-Import Upgrade – Action Plan (2025-06-12)
+========================================================
+Goal
+----
+Load **only the cells actually required** for a Monte-Carlo run (MC inputs, target, and their dependencies).  This slashes RAM + I/O for medium / large workbooks.
+
+Roadmap
+-------
+1.  Parser enhancement
+    1.1 Keep existing full-formula extraction (very small).
+    1.2 Create lightweight **Arrow value cache** while streaming rows (already done) – we'll leverage it for on-demand lookups.
+    1.3 Add helper `get_cell_values(file_id, cells)` that returns a dict of requested `(sheet, coord) -> value`:
+        • First try Arrow cache (fast columnar filter).
+        • Fallback: open workbook in *read_only* mode; fetch each sheet only once; read listed coordinates.
+        • Values are typed (floats/ints/strings) as in openpyxl.
+
+2.  Simulation-service refactor
+    2.1 In `run_monte_carlo_simulation_task` reorder steps:
+         a)  Parse formulas (already early)
+         b)  Build evaluation order → `ordered_calc_steps`
+         c)  Construct `needed_cells` = target ⋃ MC-input ⋃ {sheet,coord in ordered_calc_steps}
+    2.2 Replace heavy call to `get_all_parsed_sheets_data` + row scan with a single call to `get_cell_values`.
+    2.3 Remove previous constant-value gathering loop.
+    2.4 Progress updates remain unchanged.
+
+3.  Unit-safety adjustments
+    3.1 If any requested constant cell is missing, log a warning and assume `NaN` so simulation still runs.
+    3.2 Preserve existing Arrow cache path for future speedups; no mandatory migration.
+
+4.  Front-end: no change needed (same API response).
+
+5.  Dev-Ops
+    • Code edits: `backend/excel_parser/service.py`, `backend/simulation/service.py`.
+    • Backend container restart (bind-mount) suffices; no full rebuild.
+
+6.  Future enhancements (not in this patch)
+    • Store dependency-specific value maps in Redis for multi-user performance.
+    • Build sheet-level minified Arrow partitions for extremely large books (>1M cells).
+    • Provide API endpoint `/files/{id}/cells?list=...` for generic querying. 

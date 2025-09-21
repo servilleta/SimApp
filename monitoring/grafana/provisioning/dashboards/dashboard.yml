@@ -1,0 +1,15 @@
+# 📊 GRAFANA DASHBOARD PROVISIONING
+# Automatic dashboard loading
+
+apiVersion: 1
+
+providers:
+  - name: 'Monte Carlo Enterprise'
+    orgId: 1
+    folder: 'Enterprise'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards

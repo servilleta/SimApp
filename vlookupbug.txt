@@ -1,0 +1,122 @@
+VLOOKUP Simulation Bug - Issues Discovered So Far
+===============================================
+
+1. **No Histogram or Results for VLOOKUP Targets**
+   - Simulations involving VLOOKUP (especially with letters/strings) return all-zero stats and empty histograms.
+   - Frontend receives `{bins: [], values: []}` and all result stats are zero.
+
+2. **No Backend Debug Logs for Formula Evaluation**
+   - Despite aggressive debug logging in formula dependency analysis, simulation engine, and VLOOKUP handlers, no logs appear for formula evaluation or VLOOKUP handling.
+   - Only progress and status logs are present.
+
+3. **Formula Metrics Show Formulas Count, But No Details**
+   - Backend logs show `total_formulas` and `relevant_formulas` counts, but do not list which formulas are included or evaluated.
+   - No evidence that VLOOKUP formulas are present in the calculation chain.
+
+4. **Dependency Extraction/Parsing May Be Skipping VLOOKUPs**
+   - The dependency extraction or formula parsing logic may be skipping or not recognizing VLOOKUP formulas in the Excel file.
+   - No logs confirming inclusion of VLOOKUP formulas for simulation targets (e.g., E8, F8, G8).
+
+5. **Possible Excel File or Parsing Issue**
+   - It's possible the uploaded Excel file's formulas are not being read or parsed correctly, or are being skipped due to formatting or file reading issues.
+
+**Next Steps:**
+- Add logging to Excel file parsing and dependency extraction to print every formula found and included.
+- Confirm that VLOOKUP formulas are present and correctly formatted in the uploaded Excel file.
+
+---
+
+Logging Added for VLOOKUP Debugging
+===================================
+
+1. **Formula Dependency Analysis Logging**
+   - Added in `backend/simulation/formula_utils.py` (get_evaluation_order):
+     - Logs every formula cell, its formula, and whether it is included in the calculation chain.
+     - Highlights any formulas containing 'VLOOKUP'.
+     - Example log: `[EVAL_ORDER_DEBUG] Sheet!Cell = Formula` and `[EVAL_ORDER_DEBUG] VLOOKUP formula detected: Sheet!Cell = Formula`.
+
+2. **Simulation Engine Logging**
+   - Added in `backend/simulation/engine.py` and `backend/simulation/enhanced_engine.py`:
+     - Logs every formula being evaluated, its cell, and the result for each simulation iteration.
+     - Example log: `[SIM_DEBUG] Iter X: Evaluating Sheet!Cell = Formula`.
+     - Logs parsed AST and handler for each formula (enhanced engine): `[SIM_TRACE] Evaluating formula: ...`, `[SIM_TRACE] Parsed AST: ...`, `[SIM_TRACE] Handler for AST: ...`.
+
+3. **VLOOKUP Handler Logging**
+   - Added in `backend/super_engine/compiler_v2.py`:
+     - Logs entry into the VLOOKUP handler: `[VLOOKUP DEBUG] Entered VLOOKUP handler in compiler_v2.py for function: VLOOKUP`.
+     - Logs GPU result and fallback trigger: `[VLOOKUP DEBUG] GPU result: ...`, `[VLOOKUP FALLBACK] All-NaN detected from GPU VLOOKUP. Triggering CPU fallback for string/object lookup.`
+     - Logs CPU fallback results.
+
+4. **Enhanced Formula Engine Logging**
+   - Added in `backend/excel_parser/enhanced_formula_engine.py`:
+     - Logs every call to `_vlookup` with arguments: `[ENHANCED_VLOOKUP DEBUG] Called with lookup_value=..., col_index=..., range_lookup=...`.
+
+5. **Simulation Service and Dependency Chain Logging**
+   - Added in `backend/simulation/service.py`:
+     - Logs the full dependency chain for each simulation target, including the formula string for each cell.
+     - Highlights any formulas containing 'VLOOKUP': `[DEPENDENCY_CHAIN_DEBUG] VLOOKUP formula detected: ...`.
+
+---
+
+**Despite all this logging, no VLOOKUP-related logs have appeared in backend output, indicating the formulas are not being picked up for simulation.**
+
+---
+
+Fixes Applied for VLOOKUP Simulation Issue
+==========================================
+
+1. **Enhanced Excel Parser Logging**
+   - Added logging in `backend/excel_parser/service.py` to track VLOOKUP formulas during parsing
+   - Logs total formulas found and specifically counts VLOOKUP formulas
+   - Example log: `[EXCEL_PARSER_DEBUG] VLOOKUP found in Sheet1!E8: =VLOOKUP(A8,A1:B5,2,FALSE)`
+
+2. **Simulation Service Dependency Chain Logging**
+   - Added logging in `backend/simulation/service.py` to verify VLOOKUP formulas in dependency chain
+   - Logs dependency chain length and counts VLOOKUPs included
+   - Example log: `[SIMULATION_DEBUG] VLOOKUP in dependency chain: Sheet1!E8 = =VLOOKUP(A8,A1:B5,2,FALSE)`
+
+3. **Enhanced CPU VLOOKUP Implementation**
+   - Improved `excel_vlookup` function in `backend/simulation/engine.py`
+   - Added comprehensive logging for debugging
+   - Fixed string comparison to be case-insensitive
+   - Better handling of exact vs approximate matches
+   - Proper error handling for invalid inputs
+
+4. **VLOOKUP Fallback Wrapper**
+   - Added `excel_vlookup_with_fallback` function in `backend/simulation/engine.py`
+   - Detects NaN results from GPU VLOOKUP (indicating string/object lookup)
+   - Automatically falls back to CPU implementation for string lookups
+   - Integrated into SAFE_EVAL_NAMESPACE for formula evaluation
+
+5. **SuperEngine Compiler VLOOKUP Handler**
+   - Fixed VLOOKUP handler in `backend/super_engine/compiler_v2.py`
+   - Corrected import path for CPU fallback function
+   - Added proper GPU-to-CPU array conversion
+   - Handles both single values and vectorized lookups
+   - Converts Excel errors (#N/A, etc.) to NaN for consistency
+
+---
+
+Expected Behavior After Fixes
+=============================
+
+1. **VLOOKUP with Numbers**: Should work directly on GPU with high performance
+2. **VLOOKUP with Letters/Strings**: Should automatically fallback to CPU and return correct results
+3. **Mixed Lookups**: Should handle both numeric and string lookups in the same simulation
+4. **Histogram Generation**: Should produce valid histograms with proper distribution
+5. **Sensitivity Analysis**: Should show correct variable impacts
+
+---
+
+Testing Instructions
+===================
+
+1. Upload an Excel file with VLOOKUP formulas containing letter/string lookups
+2. Define the lookup cell as an input variable
+3. Set the VLOOKUP result cell as the target
+4. Run the simulation
+5. Verify:
+   - Backend logs show VLOOKUP detection and fallback messages
+   - Simulation completes without errors
+   - Histogram displays with valid data
+   - Results show proper statistical distribution 

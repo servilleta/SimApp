@@ -1,0 +1,56 @@
+# Security TODO List for Monte Carlo Simulation Web Platform
+
+## Phase A: Critical Foundations for Secure User Management & Login
+
+*   **1. Implement Persistent & Secure User Storage:**
+    *   **Task:** Replace the in-memory `fake_users_db` in `PROJECT/backend/auth/service.py` with a persistent relational database (e.g., PostgreSQL, SQLite).
+    *   **Why:** Highest priority. User registrations are lost on restart. No actual data persistence.
+    *   **Action:** Design database schemas, integrate ORM (e.g., SQLAlchemy), refactor `auth_service.py`.
+    *   **TODO.txt Ref:** `Critical: Replace in-memory stores (users, simulation results) with a persistent database...`
+
+*   **2. Enforce Strong `SECRET_KEY` Management:**
+    *   **Task:** Ensure a unique, cryptographically strong `SECRET_KEY` is used in `PROJECT/backend/.env` for deployed/shared environments.
+    *   **Why:** Vital for JWT security. Weak key makes sessions vulnerable.
+    *   **Action:** (User/Dev task) Generate strong key (e.g., `openssl rand -hex 32`), set in `.env`. Never commit `.env` with real key.
+    *   **TODO.txt Ref:** `[~] Set up environment variables (.env file)... **SECRET_KEY IS CRUCIAL**`
+
+## Phase B: Hardening Application and API Security
+
+*   **3. Enhance File Upload Security:**
+    *   **Task:** Implement stricter controls for file uploads in `PROJECT/backend/excel_parser/`.
+    *   **Why:** Prevent malicious uploads (DoS, RCE).
+    *   **Actions:**
+        *   Reinstate/configure file size limits (`settings.MAX_UPLOAD_SIZE`).
+        *   Validate file content/MIME types (e.g., `python-magic`).
+        *   Secure `UPLOAD_DIR` permissions in Docker (avoid `chmod 777`).
+        *   Consider virus scanning.
+    *   **TODO.txt Ref:** `[ ] Test file upload security...`
+
+*   **4. Implement Rate Limiting:**
+    *   **Task:** Add rate limiting to auth endpoints (`/api/auth/register`, `/api/auth/token`) and other sensitive/resource-intensive APIs.
+    *   **Why:** Protect against brute-force, DoS, registration abuse.
+    *   **Action:** Integrate a library like `slowapi` with FastAPI.
+
+*   **5. Ensure HTTPS in Production:**
+    *   **Task:** Configure deployment environment (Nginx, load balancer) to enforce HTTPS.
+    *   **Why:** Encrypt all client-server communication.
+    *   **Action:** (Deployment task) Configure Nginx/LB for SSL.
+
+*   **6. Ongoing Input Validation & Sanitization Review:**
+    *   **Task:** Continuously ensure strict validation of all user-supplied data.
+    *   **Why:** Prevent injection attacks, ensure data integrity.
+    *   **Action:** Utilize Pydantic models. Be cautious with data in file paths, DB queries (non-ORM), external commands.
+
+## Phase C: Frontend Security Considerations
+
+*   **7. Secure JWT Handling on the Frontend:**
+    *   **Task:** Ensure secure storage and handling of JWT access tokens on the frontend.
+    *   **Why:** Prevent token theft (e.g., via XSS) leading to impersonation.
+    *   **Action:** If `localStorage`, be vigilant about XSS. If cookies, use `HttpOnly`, `Secure`, `SameSite`.
+    *   **TODO.txt Ref (related):** `[ ] **Integrate Authentication with Frontend** ... Securely store JWT`
+
+*   **8. Cross-Site Scripting (XSS) Prevention Vigilance:**
+    *   **Task:** Maintain frontend best practices to prevent XSS.
+    *   **Why:** XSS can lead to token theft, session hijacking.
+    *   **Action:** Rely on React's escaping. Avoid `dangerouslySetInnerHTML`. Sanitize user content rendered in non-standard ways.
+    *   **TODO.txt Ref:** `[ ] Test against common web vulnerabilities (XSS, CSRF, etc. - especially for frontend)` 

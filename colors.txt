@@ -1,0 +1,523 @@
+# Monte Carlo Platform - Dieter Rams Braun-Inspired Color Implementation Plan
+
+## Color System Definition
+
+### Primary Palette (Foundation - 60-70%)
+```css
+--color-white: #FFFFFF;
+--color-warm-white: #F8F8F6;
+--color-light-grey: #EEEEEE;
+```
+
+### Secondary Palette (Structure - 20-30%)
+```css
+--color-medium-grey: #777777;
+--color-dark-grey: #333333;
+--color-charcoal: #1A1A1A;
+```
+
+### Accent Palette (Function - 5-10%)
+```css
+--color-braun-orange: #FF6B35;
+--color-subtle-yellow: #FFD700;
+```
+
+### Extended Utility Colors
+```css
+--color-success: #4CAF50;
+--color-error: #D32F2F;
+--color-info: #1976D2;
+--color-border-light: #E8E8E8;
+--color-text-secondary: #555555;
+--color-text-tertiary: #888888;
+```
+
+## Screen-by-Screen Implementation
+
+### 1. Landing Page (LandingPage.jsx)
+
+**Background & Layout**
+- Main background: `--color-white`
+- Section alternating: `--color-warm-white` for even sections
+- Navigation bar: `--color-white` with subtle `--color-border-light` bottom border
+
+**Typography**
+- Hero headline: `--color-charcoal` (48px)
+- Sub-headlines: `--color-dark-grey` (32px)
+- Body text: `--color-text-secondary`
+- Feature descriptions: `--color-medium-grey`
+
+**Interactive Elements**
+- Primary CTA button: `--color-braun-orange` background, white text
+- Secondary buttons: White background, `--color-dark-grey` border and text
+- Hover states: 10% darker shade of base color
+- Links: `--color-dark-grey` with underline
+
+**Cards & Features**
+- Feature cards: `--color-white` background with `--color-border-light` border
+- Icons: `--color-medium-grey`
+- Hover elevation: subtle box-shadow using rgba(0,0,0,0.1)
+
+### 2. User Dashboard (UserDashboardPage.jsx)
+
+**Layout Structure**
+- Main background: `--color-warm-white`
+- Content areas: `--color-white` with rounded corners
+- Sidebar: `--color-white` with `--color-border-light` right border
+
+**Statistics Cards**
+- Background: `--color-white`
+- Borders: `--color-border-light`
+- Numbers: `--color-charcoal` (large, bold)
+- Labels: `--color-medium-grey`
+- Quota progress bars: `--color-braun-orange` for used, `--color-light-grey` for remaining
+
+**Navigation & Actions**
+- Active tab: `--color-braun-orange` underline
+- Inactive tabs: `--color-medium-grey` text
+- Action buttons: Follow landing page button styles
+
+### 3. Simulation Interface
+
+**Excel Upload Area**
+- Drop zone: Dashed `--color-border-light` border
+- Active drop: `--color-braun-orange` border
+- Upload icon: `--color-medium-grey`
+- Success state: `--color-success` icon
+
+**Simulation Configuration**
+- Form backgrounds: `--color-white`
+- Input fields: White with `--color-border-light` border
+- Focus state: `--color-braun-orange` border
+- Labels: `--color-dark-grey`
+- Helper text: `--color-text-tertiary`
+
+**Engine Selection**
+- Radio buttons: `--color-dark-grey` with `--color-braun-orange` when selected
+- Engine cards: `--color-white` with hover elevation
+
+### 4. Results & Visualizations
+
+**Histogram Display (CertaintyAnalysis.jsx)**
+- Background: `--color-white`
+- Grid lines: `--color-light-grey`
+- Bars: Gradient from `--color-medium-grey` to `--color-braun-orange` based on probability
+- Axis text: `--color-text-secondary`
+- Title: `--color-charcoal`
+
+**Progress Indicators**
+- Track: `--color-light-grey`
+- Fill: `--color-braun-orange`
+- Percentage text: `--color-dark-grey`
+
+**Result Cards**
+- Background: `--color-white`
+- Key metrics: `--color-charcoal`
+- Secondary metrics: `--color-medium-grey`
+
+### 5. Admin Interface (AdminUsersPage.jsx)
+
+**Data Tables**
+- Header background: `--color-warm-white`
+- Header text: `--color-dark-grey`
+- Row backgrounds: Alternate between `--color-white` and `--color-warm-white`
+- Cell text: `--color-text-secondary`
+- Actions: `--color-braun-orange` for edit, `--color-error` for delete
+
+**Filters & Search**
+- Search input: White with `--color-border-light` border
+- Filter buttons: `--color-white` background, `--color-dark-grey` text
+- Active filter: `--color-braun-orange` background, white text
+
+### 6. Authentication Screens
+
+**Login/Register Forms**
+- Background: `--color-warm-white`
+- Form container: `--color-white` with subtle shadow
+- Input styling: Same as simulation interface
+- Submit button: `--color-braun-orange`
+- OAuth buttons: `--color-dark-grey` background
+
+**Error Messages**
+- Background: Light tint of `--color-error`
+- Text: `--color-error`
+- Border: `--color-error`
+
+### 7. Navigation Components
+
+**Main Navigation Bar**
+- Background: `--color-white`
+- Logo/Brand: `--color-charcoal`
+- Nav links: `--color-dark-grey`
+- Active link: `--color-braun-orange`
+- User menu: `--color-medium-grey` icon
+
+**Sidebar (if present)**
+- Background: `--color-white`
+- Section headers: `--color-text-tertiary` (uppercase, small)
+- Menu items: `--color-dark-grey`
+- Active item: `--color-braun-orange` left border, darker background
+
+## Implementation Strategy
+
+### Phase 1: Create Global CSS Variables (Day 1)
+1. Create `/frontend/src/styles/colors.css` with all color variables
+2. Import in main App.jsx or index.css
+3. Create utility classes for common color applications
+
+### Phase 2: Update Core Components (Day 2-3)
+1. Landing page - Update all color references
+2. Navigation components - Ensure consistency
+3. Button components - Create reusable styled variants
+4. Form elements - Standardize input styling
+
+### Phase 3: Update Feature Pages (Day 4-5)
+1. User Dashboard - Apply new color system
+2. Simulation Interface - Update all states
+3. Results displays - Enhance visualizations
+4. Admin pages - Apply table styling
+
+### Phase 4: Polish & Consistency (Day 6)
+1. Review all hover/active states
+2. Ensure accessibility compliance (WCAG AA)
+3. Test in different lighting conditions
+4. Create dark mode variables (optional future enhancement)
+
+## CSS Variable Implementation Example
+
+```css
+/* colors.css */
+:root {
+  /* Foundation Colors */
+  --color-white: #FFFFFF;
+  --color-warm-white: #F8F8F6;
+  --color-light-grey: #EEEEEE;
+  
+  /* Structure Colors */
+  --color-medium-grey: #777777;
+  --color-dark-grey: #333333;
+  --color-charcoal: #1A1A1A;
+  
+  /* Accent Colors */
+  --color-braun-orange: #FF6B35;
+  --color-subtle-yellow: #FFD700;
+  
+  /* Utility Colors */
+  --color-success: #4CAF50;
+  --color-error: #D32F2F;
+  --color-info: #1976D2;
+  --color-border-light: #E8E8E8;
+  --color-text-secondary: #555555;
+  --color-text-tertiary: #888888;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+}
+```
+
+## Component-Specific Examples
+
+### Button Styles
+```css
+.btn-primary {
+  background-color: var(--color-braun-orange);
+  color: var(--color-white);
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: #E85A00; /* 10% darker */
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-secondary {
+  background-color: var(--color-white);
+  color: var(--color-dark-grey);
+  border: 1px solid var(--color-dark-grey);
+}
+```
+
+### Card Components
+```css
+.card {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border-light);
+  border-radius: 8px;
+  padding: 24px;
+  transition: box-shadow 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+```
+
+### Form Inputs
+```css
+.form-input {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border-light);
+  color: var(--color-dark-grey);
+  padding: 12px 16px;
+  border-radius: 4px;
+  transition: border-color 0.2s ease;
+}
+
+.form-input:focus {
+  border-color: var(--color-braun-orange);
+  outline: none;
+}
+```
+
+## Accessibility Checklist
+
+1. **Contrast Ratios**
+   - Dark grey on white: 12.6:1 ✓
+   - Medium grey on white: 4.5:1 ✓
+   - Orange on white: 3.9:1 (use sparingly, prefer with white text)
+
+2. **Focus States**
+   - All interactive elements must have visible focus indicators
+   - Use `--color-braun-orange` for focus rings
+
+3. **Color Independence**
+   - Never rely solely on color to convey information
+   - Use icons, text, or patterns as additional indicators
+
+## Notes for Developers
+
+1. **Consistency First**: Always use CSS variables, never hardcode colors
+2. **Restraint**: Remember the 70-20-10 rule for color distribution
+3. **Function Over Form**: Color should enhance usability, not decoration
+4. **Test Everything**: Check all color combinations for accessibility
+
+## Migration Checklist
+
+- [ ] Create CSS variable file
+- [ ] Update Tailwind config (if using Tailwind)
+- [ ] Update LandingPage.jsx
+- [ ] Update UserDashboardPage.jsx
+- [ ] Update simulation components
+- [ ] Update CertaintyAnalysis.jsx histogram colors
+- [ ] Update AdminUsersPage.jsx
+- [ ] Update authentication screens
+- [ ] Update all button components
+- [ ] Update all form elements
+- [ ] Update navigation components
+- [ ] Test all hover/active states
+- [ ] Verify accessibility compliance
+- [ ] Document any custom color usage
+
+## Component Migration Examples
+
+### 1. LandingPage.jsx Updates
+
+```jsx
+// Before
+<div className="bg-gray-50">
+  <h1 className="text-4xl font-bold text-gray-900">
+    Monte Carlo Simulations
+  </h1>
+  <button className="btn-primary">
+    Get Started
+  </button>
+</div>
+
+// After
+<div className="bg-warm-white">
+  <h1 className="text-4xl font-bold text-charcoal">
+    Monte Carlo Simulations
+  </h1>
+  <button className="btn-braun-primary">
+    Get Started
+  </button>
+</div>
+```
+
+### 2. UserDashboardPage.jsx Statistics Cards
+
+```jsx
+// Before
+<div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+  <div className="text-3xl font-bold text-gray-800">{totalSimulations}</div>
+  <div className="text-sm text-gray-500">Total Simulations</div>
+</div>
+
+// After
+<div className="card-braun">
+  <div className="text-3xl font-bold text-charcoal">{totalSimulations}</div>
+  <div className="text-sm text-medium-grey">Total Simulations</div>
+</div>
+```
+
+### 3. CertaintyAnalysis.jsx Histogram Colors
+
+```javascript
+// Before
+const barColor = d3.scaleLinear()
+  .domain([0, maxCount])
+  .range(['#e5e7eb', '#3b82f6']);
+
+// After
+const barColor = d3.scaleLinear()
+  .domain([0, maxCount])
+  .range(['var(--color-medium-grey)', 'var(--color-braun-orange)']);
+
+// Or using a gradient approach
+const gradientStops = [
+  { offset: '0%', color: 'var(--color-medium-grey)' },
+  { offset: '100%', color: 'var(--color-braun-orange)' }
+];
+```
+
+### 4. Form Components
+
+```jsx
+// Before
+<div>
+  <label className="block text-sm font-medium text-gray-700">
+    Email
+  </label>
+  <input 
+    type="email" 
+    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+  />
+</div>
+
+// After
+<div>
+  <label className="label-braun">
+    Email
+  </label>
+  <input 
+    type="email" 
+    className="input-braun mt-1"
+  />
+</div>
+```
+
+### 5. Navigation Components
+
+```jsx
+// Before
+<nav className="bg-white shadow">
+  <a href="/dashboard" className="text-gray-700 hover:text-gray-900">
+    Dashboard
+  </a>
+  <a href="/simulations" className="text-gray-700 hover:text-gray-900">
+    Simulations
+  </a>
+</nav>
+
+// After
+<nav className="bg-white border-b border-light">
+  <a href="/dashboard" className="nav-link-braun">
+    Dashboard
+  </a>
+  <a href="/simulations" className="nav-link-braun active">
+    Simulations
+  </a>
+</nav>
+```
+
+### 6. Progress Indicators
+
+```jsx
+// Before
+<div className="w-full bg-gray-200 rounded-full h-2.5">
+  <div className="bg-blue-600 h-2.5 rounded-full" style={{width: '45%'}}></div>
+</div>
+
+// After
+<div className="progress-braun">
+  <div className="progress-braun-fill" style={{width: '45%'}}></div>
+</div>
+```
+
+### 7. Alert Messages
+
+```jsx
+// Before
+<div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded">
+  Error: Simulation failed
+</div>
+
+// After
+<div className="alert-braun alert-braun-error">
+  Error: Simulation failed
+</div>
+```
+
+### 8. Table Styling (AdminUsersPage.jsx)
+
+```jsx
+// Before
+<table className="min-w-full divide-y divide-gray-200">
+  <thead className="bg-gray-50">
+    <tr>
+      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+        User
+      </th>
+    </tr>
+  </thead>
+  <tbody className="bg-white divide-y divide-gray-200">
+    <tr>
+      <td className="px-6 py-4 text-sm text-gray-900">
+        John Doe
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+// After
+<table className="table-braun">
+  <thead>
+    <tr>
+      <th>User</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>John Doe</td>
+    </tr>
+  </tbody>
+</table>
+```
+
+## Quick CSS Class Mapping
+
+| Old Class | New Class/Variable |
+|-----------|-------------------|
+| bg-gray-50 | bg-warm-white |
+| bg-gray-100 | bg-warm-white |
+| bg-gray-200 | bg-light-grey |
+| text-gray-900 | text-charcoal |
+| text-gray-800 | text-dark-grey |
+| text-gray-600 | text-secondary |
+| text-gray-500 | text-medium-grey |
+| text-gray-400 | text-tertiary |
+| text-blue-500/600 | text-braun-orange |
+| bg-blue-500/600 | bg-braun-orange |
+| border-gray-200/300 | border-light |
+| btn-primary | btn-braun-primary |
+| btn-secondary | btn-braun-secondary |
+| shadow | shadow-sm |
+| shadow-lg | shadow-lg |
+
+## Docker Rebuild After Color Changes
+
+After implementing all color changes, perform a full Docker rebuild:
+
+```bash
+cd /home/paperspace/PROJECT
+docker-compose down
+docker system prune -f
+docker-compose build --no-cache
+docker-compose up -d
+```
+
+This ensures all CSS changes are properly compiled and served. 

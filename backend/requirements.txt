@@ -1,0 +1,104 @@
+fastapi==0.110.0
+uvicorn[standard]==0.27.1
+pydantic==2.6.1
+python-multipart==0.0.9
+websockets==12.0
+pandas==2.2.0
+openpyxl==3.1.2
+xlwings==0.30.10
+numpy==1.26.3
+scipy==1.12.0
+sympy==1.12
+networkx==3.2.1
+joblib==1.3.2
+pynvml==11.5.0
+httpx==0.26.0
+redis==5.0.1
+cachetools==5.3.2
+cryptography==41.0.7
+PyJWT==2.8.0
+pytest==7.4.3
+pytest-asyncio==0.23.2
+python-dateutil==2.8.2
+xlrd==2.0.1
+xlsxwriter==3.1.9
+formulas==1.2.7
+lark==1.1.8
+pydantic-settings~=2.0
+passlib==1.7.4
+bcrypt==4.0.1
+python-jose[cryptography]==3.3.0
+asteval==0.9.31
+cupy-cuda11x # For GPU acceleration, assuming CUDA 11.x environment
+sqlalchemy>=1.4,<2.0 # For SQLAlchemy 1.4.x ORM features
+alembic>=1.7
+psycopg2-binary>=2.9.0 # PostgreSQL driver for production
+apscheduler>=3.11.0 # For background cleanup jobs
+psutil>=5.9.0 # For system monitoring
+slowapi>=0.1.9 # For rate limiting
+email-validator>=2.0.0 # For Pydantic EmailStr validation
+lz4>=4.3.0 # For Power engine cache compression
+requests==2.31.0
+aiohttp>=3.8.0
+
+# Phase 2: Security Hardening Dependencies
+pyclamd>=0.4.0 # For virus scanning
+python-magic>=0.4.27 # For file type validation
+cryptography>=41.0.0 # Enhanced encryption
+pyotp>=2.8.0 # For 2FA TOTP
+qrcode[pil]>=7.4.2 # For 2FA QR codes
+authlib>=1.2.1 # For OAuth2 providers
+itsdangerous>=2.1.2 # For secure tokens
+bleach>=6.0.0 # For HTML sanitization
+defusedxml>=0.7.1 # For XML security
+secure>=0.3.0 # For security headers
+python-dotenv>=1.0.0 # For environment management
+sentry-sdk[fastapi]>=1.32.0 # For error tracking
+prometheus-fastapi-instrumentator>=6.1.0 # For metrics
+
+# Enhanced GPU acceleration dependencies
+scikit-learn>=1.3.0  # For enhanced statistical operations
+
+# Future forecasting dependencies (commented for Phase 3+)
+# torch>=2.0.0  # PyTorch for TFT and deep learning forecasting
+# tensorflow>=2.13.0  # TensorFlow alternative
+# transformers>=4.21.0  # Hugging Face transformers for TFT
+# prophet>=1.1.0  # Facebook Prophet for time series forecasting 
+
+# Enterprise Monte Carlo Features
+scipy>=1.9.0               # For Latin Hypercube Sampling and Sobol sequences
+psutil>=5.9.0              # For memory monitoring and system stats 
+
+# Arrow Native Monte Carlo Engine Dependencies
+pyarrow>=14.0.0
+pandas[arrow]>=2.0.0
+duckdb>=0.9.0
+# adbc-driver-duckdb  # Not available for all Python versions
+
+# Optional performance boosters
+polars>=0.20.0
+fastparquet>=2024.2.0
+
+# Phase 3: Billing and Payments
+stripe>=5.5.0  # Stripe payment processing 
+
+# Optional for METIS partitioning
+opentelemetry-api>=1.23.0
+opentelemetry-sdk>=1.23.0
+opentelemetry-exporter-otlp-proto-grpc>=1.23.0
+
+dpctl>=0.15.0  # oneAPI device access
+grpcio>=1.62.0  # for future NIM gRPC communication
+deltalake>=0.12.0  # delta-rs bindings 
+
+# Removed numba-dpctl (no cp311 wheels yet); oneAPI kernels remain optional.
+# Removed obsolete standalone package. Starting with PyArrow 10, Flight is included in the main wheel and only requires grpc extra deps (already listed).
+# numba-dpctl>=0.17.0
+
+# Modern PDF export with perfect visual fidelity
+playwright>=1.40.0  # For headless browser PDF generation
+reportlab>=4.0.0      # For PDF generation fallback
+matplotlib>=3.7.0     # For chart generation in PDFs
+python-pptx>=0.6.21
+prometheus-client>=0.20.0
+GPUtil>=1.4.0  # For GPU monitoring 

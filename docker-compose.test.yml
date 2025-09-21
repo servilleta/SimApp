@@ -1,0 +1,124 @@
+# 🧪 Simplified Test Docker Composition
+# For testing our enterprise platform with core services
+version: '3.8'
+
+networks:
+  test-network:
+    driver: bridge
+
+services:
+  # ====================================================================
+  # INFRASTRUCTURE SERVICES
+  # ====================================================================
+  
+  # Redis for event bus and caching
+  redis:
+    image: redis:7-alpine
+    container_name: test-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # PostgreSQL for enterprise data
+  postgres:
+    image: postgres:15-alpine
+    container_name: test-postgres
+    environment:
+      POSTGRES_DB: enterprise_db
+      POSTGRES_USER: enterprise_user
+      POSTGRES_PASSWORD: enterprise_password
+    ports:
+      - "5432:5432"
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U enterprise_user -d enterprise_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ====================================================================
+  # CORE SERVICES
+  # ====================================================================
+  
+  # Main Simulation Service (Your existing backend)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: test-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://enterprise_user:enterprise_password@postgres:5432/enterprise_db
+      - REDIS_URL=redis://redis:6379/0
+      - ENV=development
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    volumes:
+      - ./uploads:/app/uploads
+      - ./enterprise-storage:/app/enterprise-storage
+      - ./backend:/app  # Development: live code reloading
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - test-network
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+    # 🚀 ENABLE GPU SUPPORT FOR ULTRA ENGINE
+    runtime: nvidia
+
+  # Frontend service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: test-frontend
+    ports:
+      - "9090:3000"
+    environment:
+      - REACT_APP_API_URL=http://backend:8000
+      - NODE_ENV=development
+    depends_on:
+      - backend
+    networks:
+      - test-network
+
+# ====================================================================
+# VOLUMES
+# ====================================================================
+volumes:
+  postgres-data:
+  redis-data:
+
+# ====================================================================
+# USAGE INSTRUCTIONS
+# ====================================================================
+# 🚀 Start the test platform:
+#   docker-compose -f docker-compose.test.yml up --build
+# 
+# 📊 Access services:
+#   - Backend API: http://localhost:8000
+#   - Frontend: http://localhost:9090
+#   - PostgreSQL: localhost:5432
+#   - Redis: localhost:6379
+# 
+# 🔍 View logs:
+#   docker-compose -f docker-compose.test.yml logs -f [service-name]
+# 
+# 🛑 Stop and clean:
+#   docker-compose -f docker-compose.test.yml down -v

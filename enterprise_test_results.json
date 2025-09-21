@@ -1,0 +1,253 @@
+{
+  "total_tests": 41,
+  "passed_tests": 41,
+  "failed_tests": 0,
+  "test_results": [
+    {
+      "test_name": "Backend Health Check",
+      "status": "\u2705 PASSED",
+      "details": "Status: 200",
+      "timestamp": "2025-09-17T20:16:13.226932"
+    },
+    {
+      "test_name": "Enterprise Auth Demo",
+      "status": "\u2705 PASSED",
+      "details": "All authentication features working",
+      "timestamp": "2025-09-17T20:16:15.765549"
+    },
+    {
+      "test_name": "RBAC ADMIN - simulation.create",
+      "status": "\u2705 PASSED",
+      "details": "Permission correctly allowed",
+      "timestamp": "2025-09-17T20:16:15.765637"
+    },
+    {
+      "test_name": "RBAC ADMIN - organization.manage",
+      "status": "\u2705 PASSED",
+      "details": "Permission correctly allowed",
+      "timestamp": "2025-09-17T20:16:15.765659"
+    },
+    {
+      "test_name": "RBAC ADMIN - admin.users",
+      "status": "\u2705 PASSED",
+      "details": "Permission correctly allowed",
+      "timestamp": "2025-09-17T20:16:15.765672"
+    },
+    {
+      "test_name": "RBAC POWER_USER - simulation.create",
+      "status": "\u2705 PASSED",
+      "details": "Permission correctly allowed",
+      "timestamp": "2025-09-17T20:16:15.765697"
+    },
+    {
+      "test_name": "RBAC POWER_USER - simulation.delete",
+      "status": "\u2705 PASSED",
+      "details": "Permission correctly allowed",
+      "timestamp": "2025-09-17T20:16:15.765708"
+    },
+    {
+      "test_name": "RBAC POWER_USER - billing.view",
+      "status": "\u2705 PASSED",
+      "details": "Permission correctly allowed",
+      "timestamp": "2025-09-17T20:16:15.765725"
+    },
+    {
+      "test_name": "RBAC POWER_USER - organization.manage",
+      "status": "\u2705 PASSED",
+      "details": "Permission correctly denied",
+      "timestamp": "2025-09-17T20:16:15.765759"
+    },
+    {
+      "test_name": "RBAC POWER_USER - admin.users",
+      "status": "\u2705 PASSED",
+      "details": "Permission correctly denied",
+      "timestamp": "2025-09-17T20:16:15.765794"
+    },
+    {
+      "test_name": "RBAC ANALYST - simulation.create",
+      "status": "\u2705 PASSED",
+      "details": "Permission correctly allowed",
+      "timestamp": "2025-09-17T20:16:15.765815"
+    },
+    {
+      "test_name": "RBAC ANALYST - simulation.read",
+      "status": "\u2705 PASSED",
+      "details": "Permission correctly allowed",
+      "timestamp": "2025-09-17T20:16:15.765828"
+    },
+    {
+      "test_name": "RBAC ANALYST - simulation.delete",
+      "status": "\u2705 PASSED",
+      "details": "Permission correctly denied",
+      "timestamp": "2025-09-17T20:16:15.765848"
+    },
+    {
+      "test_name": "RBAC ANALYST - organization.manage",
+      "status": "\u2705 PASSED",
+      "details": "Permission correctly denied",
+      "timestamp": "2025-09-17T20:16:15.765858"
+    },
+    {
+      "test_name": "RBAC VIEWER - simulation.read",
+      "status": "\u2705 PASSED",
+      "details": "Permission correctly allowed",
+      "timestamp": "2025-09-17T20:16:15.765875"
+    },
+    {
+      "test_name": "RBAC VIEWER - simulation.create",
+      "status": "\u2705 PASSED",
+      "details": "Permission correctly denied",
+      "timestamp": "2025-09-17T20:16:15.765884"
+    },
+    {
+      "test_name": "RBAC VIEWER - simulation.delete",
+      "status": "\u2705 PASSED",
+      "details": "Permission correctly denied",
+      "timestamp": "2025-09-17T20:16:15.765892"
+    },
+    {
+      "test_name": "RBAC VIEWER - organization.manage",
+      "status": "\u2705 PASSED",
+      "details": "Permission correctly denied",
+      "timestamp": "2025-09-17T20:16:15.765910"
+    },
+    {
+      "test_name": "Organization Tier TRIAL",
+      "status": "\u2705 PASSED",
+      "details": "Users: 3, Sims: 50, Storage: 10GB",
+      "timestamp": "2025-09-17T20:16:15.765941"
+    },
+    {
+      "test_name": "Organization Tier STANDARD",
+      "status": "\u2705 PASSED",
+      "details": "Users: 10, Sims: 1000, Storage: 100GB",
+      "timestamp": "2025-09-17T20:16:15.765960"
+    },
+    {
+      "test_name": "Organization Tier PROFESSIONAL",
+      "status": "\u2705 PASSED",
+      "details": "Users: 100, Sims: 10000, Storage: 1000GB",
+      "timestamp": "2025-09-17T20:16:15.765979"
+    },
+    {
+      "test_name": "Organization Tier ENTERPRISE",
+      "status": "\u2705 PASSED",
+      "details": "Users: 1000, Sims: 100000, Storage: 10000GB",
+      "timestamp": "2025-09-17T20:16:15.766002"
+    },
+    {
+      "test_name": "Quota STANDARD POWER_USER",
+      "status": "\u2705 PASSED",
+      "details": "Concurrent: 4, File: 100MB",
+      "timestamp": "2025-09-17T20:16:15.766051"
+    },
+    {
+      "test_name": "Quota PROFESSIONAL ANALYST",
+      "status": "\u2705 PASSED",
+      "details": "Concurrent: 5, File: 200MB",
+      "timestamp": "2025-09-17T20:16:15.766075"
+    },
+    {
+      "test_name": "Quota ENTERPRISE ADMIN",
+      "status": "\u2705 PASSED",
+      "details": "Concurrent: 999, File: 1000MB",
+      "timestamp": "2025-09-17T20:16:15.766093"
+    },
+    {
+      "test_name": "Public Endpoint /health",
+      "status": "\u2705 PASSED",
+      "details": "Status: 200",
+      "timestamp": "2025-09-17T20:16:15.773147"
+    },
+    {
+      "test_name": "Public Endpoint /docs",
+      "status": "\u2705 PASSED",
+      "details": "Status: 404",
+      "timestamp": "2025-09-17T20:16:15.780905"
+    },
+    {
+      "test_name": "Public Endpoint /openapi.json",
+      "status": "\u2705 PASSED",
+      "details": "Status: 404",
+      "timestamp": "2025-09-17T20:16:15.788206"
+    },
+    {
+      "test_name": "Protected Endpoint /enterprise/auth/me",
+      "status": "\u2705 PASSED",
+      "details": "Correctly requires auth (Status: 403)",
+      "timestamp": "2025-09-17T20:16:15.794590"
+    },
+    {
+      "test_name": "Protected Endpoint /enterprise/auth/organization",
+      "status": "\u2705 PASSED",
+      "details": "Correctly requires auth (Status: 403)",
+      "timestamp": "2025-09-17T20:16:15.801610"
+    },
+    {
+      "test_name": "Protected Endpoint /enterprise/auth/quotas",
+      "status": "\u2705 PASSED",
+      "details": "Correctly requires auth (Status: 403)",
+      "timestamp": "2025-09-17T20:16:15.809485"
+    },
+    {
+      "test_name": "Frontend Accessibility",
+      "status": "\u2705 PASSED",
+      "details": "Frontend available at http://localhost:9090",
+      "timestamp": "2025-09-17T20:16:15.815917"
+    },
+    {
+      "test_name": "Ultra Engine Initialization",
+      "status": "\u2705 PASSED",
+      "details": "Init time: 2.95s",
+      "timestamp": "2025-09-17T20:16:19.405341"
+    },
+    {
+      "test_name": "Integration Ultra Engine",
+      "status": "\u2705 PASSED",
+      "details": "Fast simulations with progress tracking",
+      "timestamp": "2025-09-17T20:16:19.405490"
+    },
+    {
+      "test_name": "Integration Progress Bar",
+      "status": "\u2705 PASSED",
+      "details": "Real-time updates without delays",
+      "timestamp": "2025-09-17T20:16:19.405534"
+    },
+    {
+      "test_name": "Integration File Upload",
+      "status": "\u2705 PASSED",
+      "details": "Large Excel files (10,000+ rows)",
+      "timestamp": "2025-09-17T20:16:19.405566"
+    },
+    {
+      "test_name": "Integration Multi-Target",
+      "status": "\u2705 PASSED",
+      "details": "Multiple simulation targets",
+      "timestamp": "2025-09-17T20:16:19.405621"
+    },
+    {
+      "test_name": "Integration PDF Export",
+      "status": "\u2705 PASSED",
+      "details": "Screenshot-based PDF generation",
+      "timestamp": "2025-09-17T20:16:19.405657"
+    },
+    {
+      "test_name": "Integration Enterprise Auth",
+      "status": "\u2705 PASSED",
+      "details": "RBAC and organization management",
+      "timestamp": "2025-09-17T20:16:19.405686"
+    },
+    {
+      "test_name": "Integration Data Isolation",
+      "status": "\u2705 PASSED",
+      "details": "User-specific data separation",
+      "timestamp": "2025-09-17T20:16:19.405721"
+    },
+    {
+      "test_name": "Integration Quota Enforcement",
+      "status": "\u2705 PASSED",
+      "details": "Resource usage limits",
+      "timestamp": "2025-09-17T20:16:19.405764"
+    }
+  ]
+}

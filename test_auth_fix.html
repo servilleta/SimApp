@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Authentication Test</title>
+</head>
+<body>
+    <h1>Manual Authentication Test</h1>
+    <div id="status">Ready to test...</div>
+    <button onclick="testAuth()">Test Authentication</button>
+    
+    <script>
+        async function testAuth() {
+            document.getElementById('status').innerHTML = 'Testing...';
+            
+            try {
+                // First try without authentication
+                const response = await fetch('/api/simulations/run', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        file_id: 'test',
+                        variables: [],
+                        iterations: 10
+                    })
+                });
+                
+                document.getElementById('status').innerHTML = 
+                    `Response: ${response.status} - ${response.statusText}`;
+                    
+            } catch (error) {
+                document.getElementById('status').innerHTML = 
+                    `Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
+
+
+

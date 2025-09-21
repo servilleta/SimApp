@@ -1,0 +1,303 @@
+# 🚀 ENTERPRISE KUBERNETES DEPLOYMENT
+# Phase 3 Week 9-10: Load Balancing & Auto-Scaling
+# 
+# This deployment configuration provides:
+# - Horizontal auto-scaling (3-20 replicas)
+# - GPU resource allocation
+# - Load balancing across simulation instances
+# - High availability with rolling updates
+#
+# CRITICAL: This preserves Ultra engine functionality while adding enterprise scaling
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simulation-service
+  namespace: monte-carlo-enterprise
+  labels:
+    app: simulation-service
+    tier: enterprise
+    component: ultra-engine
+spec:
+  replicas: 3  # Start with 3 replicas for high availability
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0  # Zero-downtime deployments
+  selector:
+    matchLabels:
+      app: simulation-service
+  template:
+    metadata:
+      labels:
+        app: simulation-service
+        tier: enterprise
+        component: ultra-engine
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      # Node selection for GPU nodes
+      nodeSelector:
+        accelerator: nvidia-tesla-t4
+      
+      # Tolerations for GPU nodes
+      tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule
+      
+      containers:
+      - name: simulation-service
+        image: monte-carlo/simulation-service:latest
+        imagePullPolicy: Always
+        
+        # Resource allocation
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+            nvidia.com/gpu: 1
+          limits:
+            memory: "8Gi"
+            cpu: "4000m"
+            nvidia.com/gpu: 1
+        
+        # Container ports
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        - containerPort: 9090
+          name: metrics
+          protocol: TCP
+        
+        # Environment variables for enterprise configuration
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: REDIS_CLUSTER_ENDPOINT
+          value: "redis-cluster:6379"
+        - name: DATABASE_POOL_SIZE
+          value: "20"
+        - name: MAX_CONCURRENT_SIMULATIONS
+          value: "10"
+        - name: ULTRA_ENGINE_MODE
+          value: "enterprise"
+        - name: GPU_MEMORY_LIMIT
+          value: "8GB"
+        - name: ENABLE_METRICS
+          value: "true"
+        - name: LOG_LEVEL
+          value: "INFO"
+        
+        # Health checks
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+        
+        # Startup probe for Ultra engine initialization
+        startupProbe:
+          httpGet:
+            path: /startup
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 12  # Allow 60 seconds for Ultra engine GPU initialization
+        
+        # Volume mounts for persistent storage
+        volumeMounts:
+        - name: simulation-storage
+          mountPath: /app/enterprise-storage
+        - name: config-volume
+          mountPath: /app/config
+          readOnly: true
+      
+      # Volumes
+      volumes:
+      - name: simulation-storage
+        persistentVolumeClaim:
+          claimName: simulation-storage-pvc
+      - name: config-volume
+        configMap:
+          name: simulation-config
+      
+      # Pod disruption budget for high availability
+      # (defined separately below)
+
+---
+# Service for load balancing
+apiVersion: v1
+kind: Service
+metadata:
+  name: simulation-service-lb
+  namespace: monte-carlo-enterprise
+  labels:
+    app: simulation-service
+    tier: enterprise
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "http"
+spec:
+  type: LoadBalancer
+  selector:
+    app: simulation-service
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+    protocol: TCP
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+    protocol: TCP
+  
+  # Session affinity for WebSocket connections (progress bar)
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 3600
+
+---
+# Horizontal Pod Autoscaler
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: simulation-service-hpa
+  namespace: monte-carlo-enterprise
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: simulation-service
+  minReplicas: 3
+  maxReplicas: 20
+  
+  # Scaling metrics
+  metrics:
+  # CPU utilization
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  
+  # Memory utilization
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  
+  # GPU utilization (custom metric)
+  - type: Pods
+    pods:
+      metric:
+        name: gpu_utilization_percent
+      target:
+        type: AverageValue
+        averageValue: "75"
+  
+  # Active simulations per pod (custom metric)
+  - type: Pods
+    pods:
+      metric:
+        name: active_simulations_per_pod
+      target:
+        type: AverageValue
+        averageValue: "8"
+  
+  # Scaling behavior
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 300  # 5 minutes
+      policies:
+      - type: Percent
+        value: 50  # Scale up by 50% at most
+        periodSeconds: 60
+      - type: Pods
+        value: 2   # Or add 2 pods at most
+        periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 900  # 15 minutes
+      policies:
+      - type: Percent
+        value: 25  # Scale down by 25% at most
+        periodSeconds: 300
+
+---
+# Pod Disruption Budget for high availability
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: simulation-service-pdb
+  namespace: monte-carlo-enterprise
+spec:
+  minAvailable: 2  # Always keep at least 2 pods running
+  selector:
+    matchLabels:
+      app: simulation-service
+
+---
+# Persistent Volume Claim for simulation storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: simulation-storage-pvc
+  namespace: monte-carlo-enterprise
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Ti  # 1TB for enterprise simulation storage
+  storageClassName: fast-ssd
+
+---
+# ConfigMap for simulation service configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: simulation-config
+  namespace: monte-carlo-enterprise
+data:
+  ultra_engine.conf: |
+    # Ultra Engine Enterprise Configuration
+    gpu_memory_limit = 8GB
+    max_concurrent_simulations = 10
+    cache_simulation_results = true
+    enable_progress_streaming = true
+    websocket_timeout = 3600
+    
+  redis.conf: |
+    # Redis Cluster Configuration
+    cluster-enabled yes
+    cluster-config-file nodes.conf
+    cluster-node-timeout 5000
+    appendonly yes
+    
+  database.conf: |
+    # Database Configuration
+    pool_size = 20
+    max_overflow = 50
+    pool_timeout = 30
+    pool_recycle = 3600

@@ -1,0 +1,63 @@
+/* Sidebar Loading Animation */
+.recent-item-loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.recent-item-loading::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 107, 53, 0.15) 25%,
+    rgba(255, 107, 53, 0.3) 50%,
+    rgba(255, 107, 53, 0.15) 75%,
+    transparent 100%
+  );
+  animation: loading-sweep 1.5s ease-in-out infinite;
+  z-index: 1;
+  pointer-events: none;
+}
+
+@keyframes loading-sweep {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.recent-item-loading .recent-item-content {
+  position: relative;
+  z-index: 2;
+}
+
+/* Subtle pulse effect for the filename during loading */
+.recent-item-loading .recent-item-name {
+  animation: loading-pulse 2s ease-in-out infinite;
+}
+
+@keyframes loading-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Disabled state during loading */
+.recent-item-loading {
+  cursor: wait !important;
+  pointer-events: auto;
+}
+
+.recent-item-loading:hover {
+  background-color: var(--color-warm-white) !important;
+}

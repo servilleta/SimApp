@@ -1,0 +1,553 @@
+# Stripe Integration & API Key Management Plan
+**Monte Carlo Simulation Platform - B2B API Monetization Strategy**
+
+---
+
+## 🎯 **Overview**
+
+Transform the Monte Carlo platform into a revenue-generating B2B API service with Stripe-powered billing, tiered pricing, and comprehensive admin controls.
+
+---
+
+## 👥 **User Types & Permissions**
+
+### **1. Regular Users (Current Users)**
+- **Access**: Web interface for Monte Carlo simulations
+- **Features**: Upload Excel, run simulations, view results
+- **Billing**: Current subscription model (if any)
+- **API Access**: None (or read-only for personal use)
+
+### **2. API Customers (New)**
+- **Access**: API keys for programmatic access
+- **Features**: Full B2B API access for integration
+- **Billing**: Usage-based + subscription tiers
+- **API Access**: Full CRUD operations via API
+
+### **3. Enterprise Customers**
+- **Access**: Custom API keys + dedicated support
+- **Features**: Higher rate limits, priority processing, custom endpoints
+- **Billing**: Custom contracts + enterprise pricing
+- **API Access**: Enhanced features + SLA guarantees
+
+### **4. Admin Users**
+- **Access**: Admin dashboard + all user features
+- **Features**: User management, API key control, billing oversight
+- **Billing**: Internal (no charges)
+- **API Access**: Full system access for management
+
+### **5. Super Admin**
+- **Access**: Complete system control
+- **Features**: Stripe management, user type changes, system configuration
+- **Billing**: Internal oversight and configuration
+- **API Access**: Full administrative API access
+
+---
+
+## 💳 **Stripe Integration Architecture**
+
+### **Core Components**
+
+#### **1. Stripe Products & Pricing**
+```
+Products in Stripe:
+├── API Access Starter ($99/month)
+├── API Access Professional ($499/month)  
+├── API Access Enterprise ($2999/month)
+├── Usage Overage (per request above limit)
+└── Custom Enterprise Plans (negotiated)
+```
+
+#### **2. Stripe Customer Management**
+```
+Customer Data Flow:
+User Signs Up → Stripe Customer Created → Subscription Selected → API Key Generated
+     ↓
+Payment Method → Subscription Active → Rate Limits Applied → Usage Tracking
+```
+
+#### **3. API Key Lifecycle**
+```
+API Key States:
+├── pending_payment: Created but no valid payment method
+├── active: Paid subscription, full access
+├── past_due: Payment failed, limited access
+├── suspended: Manually suspended by admin
+├── cancelled: Subscription cancelled, read-only
+└── deleted: Permanently removed
+```
+
+---
+
+## 🏗️ **Technical Implementation Plan**
+
+### **Phase 1: Database Schema Updates (Week 1)**
+
+#### **New Tables**
+
+**1. `api_customers` Table:**
+```sql
+CREATE TABLE api_customers (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    stripe_customer_id VARCHAR(255) UNIQUE,
+    company_name VARCHAR(255),
+    billing_email VARCHAR(255),
+    tax_id VARCHAR(100),
+    billing_address JSONB,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+**2. `api_subscriptions` Table:**
+```sql
+CREATE TABLE api_subscriptions (
+    id SERIAL PRIMARY KEY,
+    customer_id INTEGER REFERENCES api_customers(id),
+    stripe_subscription_id VARCHAR(255) UNIQUE,
+    stripe_price_id VARCHAR(255),
+    status VARCHAR(50), -- active, past_due, cancelled, etc.
+    current_period_start TIMESTAMP,
+    current_period_end TIMESTAMP,
+    trial_end TIMESTAMP,
+    cancel_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+**3. `api_keys` Table:**
+```sql
+CREATE TABLE api_keys (
+    id SERIAL PRIMARY KEY,
+    customer_id INTEGER REFERENCES api_customers(id),
+    key_id VARCHAR(100) UNIQUE, -- e.g., "mc_live_abc123..."
+    key_hash VARCHAR(255), -- Hashed version for security
+    name VARCHAR(255), -- Human-readable name
+    status VARCHAR(50), -- active, suspended, revoked
+    rate_limit_tier VARCHAR(50), -- starter, professional, enterprise
+    last_used_at TIMESTAMP,
+    expires_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+**4. `api_usage_logs` Table:**
+```sql
+CREATE TABLE api_usage_logs (
+    id SERIAL PRIMARY KEY,
+    api_key_id INTEGER REFERENCES api_keys(id),
+    endpoint VARCHAR(255),
+    method VARCHAR(10),
+    status_code INTEGER,
+    response_time_ms INTEGER,
+    credits_consumed INTEGER,
+    request_timestamp TIMESTAMP DEFAULT NOW(),
+    ip_address INET,
+    user_agent TEXT
+);
+```
+
+**5. `usage_quotas` Table:**
+```sql
+CREATE TABLE usage_quotas (
+    id SERIAL PRIMARY KEY,
+    subscription_id INTEGER REFERENCES api_subscriptions(id),
+    period_start TIMESTAMP,
+    period_end TIMESTAMP,
+    requests_included INTEGER,
+    requests_used INTEGER DEFAULT 0,
+    overage_rate DECIMAL(10,4), -- Cost per extra request
+    created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### **User Table Updates:**
+```sql
+ALTER TABLE users ADD COLUMN user_type VARCHAR(50) DEFAULT 'regular';
+-- user_type: 'regular', 'api_customer', 'enterprise', 'admin', 'super_admin'
+
+ALTER TABLE users ADD COLUMN stripe_customer_id VARCHAR(255);
+ALTER TABLE users ADD COLUMN api_enabled BOOLEAN DEFAULT FALSE;
+```
+
+### **Phase 2: Stripe Setup (Week 1-2)**
+
+#### **1. Stripe Account Configuration**
+```bash
+# Products to create in Stripe Dashboard:
+1. "Monte Carlo API - Starter"
+   - Price: $99/month
+   - Features: 1,000 requests/month, standard processing
+
+2. "Monte Carlo API - Professional" 
+   - Price: $499/month
+   - Features: 10,000 requests/month, priority processing
+
+3. "Monte Carlo API - Enterprise"
+   - Price: $2,999/month  
+   - Features: Unlimited requests, dedicated support
+
+4. "API Usage Overage"
+   - Price: $0.05/request
+   - For usage above plan limits
+```
+
+#### **2. Webhook Endpoints**
+```python
+# Stripe webhooks to handle:
+- customer.subscription.created
+- customer.subscription.updated
+- customer.subscription.deleted
+- invoice.payment_succeeded
+- invoice.payment_failed
+- customer.created
+- customer.updated
+```
+
+### **Phase 3: Backend API Implementation (Week 2-3)**
+
+#### **1. Stripe Service Layer**
+```python
+# /backend/services/stripe_service.py
+class StripeService:
+    def create_customer(self, user_data):
+        """Create Stripe customer from user data"""
+    
+    def create_subscription(self, customer_id, price_id):
+        """Create new subscription"""
+    
+    def cancel_subscription(self, subscription_id):
+        """Cancel existing subscription"""
+    
+    def update_payment_method(self, customer_id, payment_method):
+        """Update customer payment method"""
+    
+    def get_usage_data(self, customer_id, period):
+        """Get API usage for billing period"""
+    
+    def create_usage_record(self, subscription_item_id, quantity):
+        """Record usage for metered billing"""
+```
+
+#### **2. API Key Service**
+```python
+# /backend/services/api_key_service.py
+class APIKeyService:
+    def generate_api_key(self, customer_id, tier):
+        """Generate new API key with tier-specific limits"""
+    
+    def validate_api_key(self, key):
+        """Validate API key and return customer info"""
+    
+    def check_rate_limits(self, api_key_id):
+        """Check if request is within rate limits"""
+    
+    def log_api_usage(self, api_key_id, endpoint, status):
+        """Log API usage for billing and analytics"""
+    
+    def revoke_api_key(self, key_id):
+        """Revoke API key"""
+    
+    def get_usage_stats(self, customer_id, period):
+        """Get usage statistics for customer"""
+```
+
+#### **3. Admin API Endpoints**
+```python
+# /backend/api/admin/routes.py
+@router.get("/customers")
+async def list_api_customers():
+    """List all API customers with billing status"""
+
+@router.get("/customers/{customer_id}")
+async def get_customer_details(customer_id: int):
+    """Get detailed customer information"""
+
+@router.post("/customers/{customer_id}/suspend")
+async def suspend_customer(customer_id: int):
+    """Suspend customer access"""
+
+@router.get("/usage/summary")
+async def get_usage_summary():
+    """Get platform-wide usage summary"""
+
+@router.get("/revenue/dashboard")
+async def get_revenue_dashboard():
+    """Get revenue metrics for admin dashboard"""
+```
+
+### **Phase 4: Frontend Implementation (Week 3-4)**
+
+#### **1. Customer Billing Pages**
+```
+New Pages to Create:
+├── /billing/subscription - Current plan & usage
+├── /billing/payment-methods - Manage cards
+├── /billing/invoices - Invoice history
+├── /billing/upgrade - Plan comparison & upgrade
+└── /api-keys/manage - API key management
+```
+
+#### **2. Admin Dashboard**
+```
+Admin Pages:
+├── /admin/api-customers - Customer management
+├── /admin/billing - Revenue & billing overview
+├── /admin/usage - Usage analytics
+├── /admin/api-keys - API key administration
+└── /admin/stripe - Stripe integration settings
+```
+
+#### **3. Pricing Page (Public)**
+```
+Public Page:
+└── /api-pricing - Public pricing page with Stripe checkout
+```
+
+---
+
+## 🔐 **Security Considerations**
+
+### **API Key Security**
+1. **Hashing**: Store hashed versions of API keys (like passwords)
+2. **Prefix System**: 
+   - `mc_test_` for test keys
+   - `mc_live_` for production keys
+3. **Rotation**: Ability to rotate keys without service interruption
+4. **Scoping**: Different permissions per key (read/write/admin)
+
+### **Payment Security**
+1. **PCI Compliance**: Use Stripe's secure card handling
+2. **Webhook Verification**: Verify all webhooks with Stripe signatures
+3. **Data Encryption**: Encrypt sensitive billing data
+4. **Access Logs**: Log all admin actions for audit
+
+### **Rate Limiting**
+```python
+Rate Limit Tiers:
+├── Starter: 1,000 requests/month (34/day avg)
+├── Professional: 10,000 requests/month (334/day avg)  
+├── Enterprise: Unlimited with fair usage
+└── Burst Limits: 2x daily average for short bursts
+```
+
+---
+
+## 📊 **Admin Dashboard Features**
+
+### **Revenue Dashboard**
+- Monthly Recurring Revenue (MRR)
+- Customer acquisition metrics
+- Plan distribution
+- Churn rate analysis
+- Revenue per customer
+
+### **Usage Analytics**
+- API endpoint popularity
+- Response time metrics
+- Error rate monitoring
+- Customer usage patterns
+- Resource utilization
+
+### **Customer Management**
+- Customer list with billing status
+- Subscription management
+- API key administration
+- Support ticket integration
+- Usage limit overrides
+
+### **Billing Operations**
+- Failed payment handling
+- Manual invoice generation
+- Refund processing
+- Plan changes and prorations
+- Dunning management
+
+---
+
+## 🚀 **Implementation Timeline**
+
+### **Week 1: Foundation**
+- [ ] Database schema design and migration
+- [ ] Stripe account setup and product configuration
+- [ ] Basic customer model implementation
+
+### **Week 2: Core Services**
+- [ ] Stripe service integration
+- [ ] API key generation and validation
+- [ ] Usage tracking implementation
+- [ ] Webhook handling
+
+### **Week 3: Frontend Integration**
+- [ ] Customer billing pages
+- [ ] API key management interface
+- [ ] Plan upgrade/downgrade flows
+- [ ] Payment method management
+
+### **Week 4: Admin Features**
+- [ ] Admin dashboard
+- [ ] Customer management tools
+- [ ] Revenue analytics
+- [ ] Usage monitoring
+
+### **Week 5: Testing & Launch**
+- [ ] End-to-end testing
+- [ ] Stripe test mode validation
+- [ ] Security audit
+- [ ] Production deployment
+
+---
+
+## 💰 **Pricing Strategy**
+
+### **Tiered Pricing Model**
+
+#### **Starter ($99/month)**
+- 1,000 API requests/month
+- Standard processing speed
+- Email support
+- Basic documentation
+- 99.9% uptime SLA
+
+#### **Professional ($499/month)**
+- 10,000 API requests/month
+- Priority processing (2x faster)
+- Phone + email support
+- Advanced documentation
+- 99.95% uptime SLA
+- Webhook notifications
+
+#### **Enterprise ($2,999/month)**
+- Unlimited API requests
+- Dedicated infrastructure
+- 24/7 dedicated support
+- Custom integrations
+- 99.99% uptime SLA
+- Custom SLA options
+
+#### **Usage Overage**
+- $0.05 per request above plan limit
+- Automatic billing
+- Monthly reconciliation
+
+### **Enterprise Custom Plans**
+- Volume discounts for >100,000 requests/month
+- Custom rate limits
+- Dedicated IP addresses
+- Custom endpoints
+- On-premise deployment options
+
+---
+
+## 🎯 **Success Metrics**
+
+### **Business Metrics**
+- Monthly Recurring Revenue (MRR)
+- Customer Acquisition Cost (CAC)
+- Lifetime Value (LTV)
+- Churn rate
+- Average Revenue Per User (ARPU)
+
+### **Technical Metrics**
+- API response times
+- Uptime/availability
+- Error rates
+- Usage growth
+- Customer satisfaction (NPS)
+
+### **Operational Metrics**
+- Support ticket volume
+- Payment success rate
+- Failed payment recovery
+- Plan upgrade/downgrade rates
+
+---
+
+## 🔄 **Migration Plan for Existing Users**
+
+### **Grandfathering Strategy**
+1. **Current Users**: Keep existing access unchanged
+2. **API Access**: Offer free tier for current users (limited)
+3. **Upgrade Path**: Clear migration to paid API plans
+4. **Communication**: 30-day notice for any changes
+
+### **Free Tier for Existing Users**
+- 100 API requests/month free
+- Access to basic endpoints
+- Standard documentation
+- Community support only
+
+---
+
+## 🛠️ **Technical Considerations**
+
+### **Database Performance**
+- Index API keys for fast lookup
+- Partition usage logs by date
+- Regular cleanup of old logs
+- Usage aggregation for billing
+
+### **Caching Strategy**
+- Redis cache for API key validation
+- Cache rate limit counters
+- Cache customer subscription status
+- Invalidation on status changes
+
+### **Monitoring & Alerting**
+- API key usage spikes
+- Failed payment alerts
+- Unusual usage patterns
+- System performance metrics
+
+### **Backup & Recovery**
+- Daily database backups
+- API key recovery procedures
+- Billing data redundancy
+- Disaster recovery plan
+
+---
+
+## 📋 **Next Steps**
+
+### **Immediate Actions (This Week)**
+1. **Create Stripe Account**: Set up Stripe Dashboard
+2. **Database Design**: Finalize schema and create migrations
+3. **API Planning**: Design RESTful endpoints for billing
+4. **Security Review**: Plan API key security implementation
+
+### **Development Priorities**
+1. **Backend First**: Implement core billing logic
+2. **Admin Tools**: Build internal management tools
+3. **Customer Interface**: Create customer-facing billing pages
+4. **Testing**: Comprehensive testing in Stripe test mode
+5. **Documentation**: Update API docs with billing info
+
+### **Business Preparation**
+1. **Legal Review**: Terms of service updates
+2. **Support Process**: Define customer support workflows
+3. **Marketing Material**: Create pricing page and sales materials
+4. **Launch Strategy**: Plan soft launch with beta customers
+
+---
+
+## 🎉 **Expected Outcomes**
+
+### **6-Month Goals**
+- 50+ paying API customers
+- $25,000+ Monthly Recurring Revenue
+- 99.9%+ API uptime
+- <24h support response time
+
+### **12-Month Goals**
+- 200+ paying API customers
+- $100,000+ Monthly Recurring Revenue
+- Enterprise customers with custom contracts
+- Profitable B2B API business unit
+
+**This comprehensive plan transforms your Monte Carlo platform from a web application into a scalable B2B API business with recurring revenue streams.** 🚀
+
+
+
+

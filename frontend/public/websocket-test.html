@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Health Check Test</title>
+</head>
+<body>
+    <h1>WebSocket Infrastructure Test</h1>
+    <div id="output"></div>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(message) {
+            output.innerHTML += `<p>${new Date().toISOString()}: ${message}</p>`;
+        }
+        
+        // Test WebSocket health check through NGINX
+        log('🧪 Starting WebSocket health check test...');
+        
+        const ws = new WebSocket('ws://localhost:9090/ws/health-check');
+        
+        ws.onopen = function() {
+            log('✅ WebSocket connection opened successfully');
+            ws.send('ping');
+        };
+        
+        ws.onmessage = function(event) {
+            log(`📨 Received: ${event.data}`);
+        };
+        
+        ws.onclose = function(event) {
+            log(`🔌 WebSocket closed - Code: ${event.code}, Reason: ${event.reason}`);
+        };
+        
+        ws.onerror = function(error) {
+            log(`❌ WebSocket error: ${error}`);
+        };
+        
+        // Test simulation WebSocket endpoint
+        setTimeout(() => {
+            log('🧪 Testing simulation WebSocket endpoint...');
+            
+            const simWs = new WebSocket('ws://localhost:9090/ws/simulations/test-simulation-id');
+            
+            simWs.onopen = function() {
+                log('✅ Simulation WebSocket opened successfully');
+            };
+            
+            simWs.onmessage = function(event) {
+                log(`📨 Simulation received: ${event.data}`);
+            };
+            
+            simWs.onclose = function(event) {
+                log(`🔌 Simulation WebSocket closed - Code: ${event.code}, Reason: ${event.reason}`);
+            };
+            
+            simWs.onerror = function(error) {
+                log(`❌ Simulation WebSocket error: ${error}`);
+            };
+        }, 3000);
+    </script>
+</body>
+</html>

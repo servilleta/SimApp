@@ -1,0 +1,93 @@
+{
+  "timestamp": "2025-09-19T12:30:46.135472",
+  "target": "http://localhost:9090",
+  "console_hackable": true,
+  "overall_risk": "CRITICAL",
+  "attack_results": [
+    {
+      "attack_type": "API Key Exploitation",
+      "success": true,
+      "accessible_endpoints": [
+        {
+          "endpoint": "/simapp-api/health",
+          "status": 200,
+          "response_length": 976,
+          "exposed_data": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <script type=\"module\">import { injectIntoGlobalHook } from \"/@react-refresh\";\ninjectIntoGlobalHook(window);\nwindow.$RefreshReg$ = () => {};\nwindow.$Refres..."
+        },
+        {
+          "endpoint": "/simapp-api/models",
+          "status": 200,
+          "response_length": 976,
+          "exposed_data": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <script type=\"module\">import { injectIntoGlobalHook } from \"/@react-refresh\";\ninjectIntoGlobalHook(window);\nwindow.$RefreshReg$ = () => {};\nwindow.$Refres..."
+        }
+      ],
+      "risk_level": "CRITICAL"
+    },
+    {
+      "attack_type": "Credential Exploitation",
+      "success": false,
+      "successful_logins": [],
+      "risk_level": "LOW"
+    },
+    {
+      "attack_type": "Console API Manipulation",
+      "success": true,
+      "accessible_scenarios": [
+        {
+          "scenario": "Fetch User Data",
+          "endpoint": "/api/users/profile",
+          "status": 405,
+          "accessible": false
+        },
+        {
+          "scenario": "Access Admin Functions",
+          "endpoint": "/api/admin/users",
+          "status": 401,
+          "accessible": true
+        },
+        {
+          "scenario": "File Upload Manipulation",
+          "endpoint": "/api/excel-parser/upload",
+          "status": 405,
+          "accessible": false
+        }
+      ],
+      "risk_level": "HIGH"
+    },
+    {
+      "attack_type": "Storage Manipulation",
+      "success": false,
+      "storage_usage": [],
+      "risk_level": "LOW",
+      "potential_attacks": [
+        "localStorage.setItem('authToken', 'fake_token')",
+        "localStorage.setItem('userRole', 'admin')",
+        "sessionStorage.setItem('isAdmin', 'true')"
+      ]
+    }
+  ],
+  "summary": {
+    "total_attack_vectors": 4,
+    "successful_attacks": 2,
+    "critical_risks": 1,
+    "high_risks": 1,
+    "exposed_secrets": {
+      "api_key": "ak_5zno3zn8gisz5f9held6d09l6vosgft2_sk_qcK8E1nKk4RMTRB9GuWH16iWaffQnvxZuh29oK7mmaJpBRjkVFhnF9bm3Ttln9eR",
+      "password": "Demo123!MonteCarlo",
+      "locations": [
+        "frontend/src/pages/APITestPage.jsx:6",
+        "frontend/src/pages/APIDocumentationPage.jsx:5",
+        "frontend/src/store/authSlice.js:9"
+      ]
+    }
+  },
+  "recommendations": [
+    "CRITICAL: Remove hardcoded API key from client-side code immediately",
+    "CRITICAL: Remove hardcoded credentials from client-side code",
+    "Move all sensitive configuration to environment variables",
+    "Implement proper secret management",
+    "Add client-side code obfuscation for production",
+    "Implement runtime application self-protection (RASP)",
+    "Add console tampering detection"
+  ]
+}

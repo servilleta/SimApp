@@ -1,0 +1,43 @@
+# Backup Service Dockerfile for Monte Carlo Platform
+# Phase 5: Production Deployment
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    postgresql-client \
+    curl \
+    tar \
+    gzip \
+    cron \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+RUN pip install --no-cache-dir \
+    boto3 \
+    schedule \
+    psycopg2-binary \
+    python-dotenv
+
+# Copy backup service code
+COPY backend/infrastructure/backup.py .
+COPY backend/infrastructure/backup_service.py .
+
+# Create non-root user
+RUN useradd -m -s /bin/bash backupuser
+
+# Create backup directories
+RUN mkdir -p /backups /logs \
+    && chown -R backupuser:backupuser /backups /logs \
+    && chmod 755 /backups /logs
+
+USER backupuser
+
+# Health check
+HEALTHCHECK --interval=60s --timeout=30s --start-period=30s --retries=3 \
+    CMD python -c "import backup_service; print('Backup service healthy')" || exit 1
+
+# Run backup service
+CMD ["python", "backup_service.py"] 

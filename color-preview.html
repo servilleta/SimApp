@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dieter Rams Braun-Inspired Color Preview - Monte Carlo Platform</title>
+    <style>
+        /* Import the color system */
+        :root {
+            /* Foundation Colors */
+            --color-white: #FFFFFF;
+            --color-warm-white: #F8F8F6;
+            --color-light-grey: #EEEEEE;
+            
+            /* Structure Colors */
+            --color-medium-grey: #777777;
+            --color-dark-grey: #333333;
+            --color-charcoal: #1A1A1A;
+            
+            /* Accent Colors */
+            --color-braun-orange: #FF6B35;
+            --color-braun-orange-dark: #E85A00;
+            --color-subtle-yellow: #FFD700;
+            
+            /* Utility Colors */
+            --color-success: #4CAF50;
+            --color-error: #D32F2F;
+            --color-border-light: #E8E8E8;
+            --color-text-primary: #1A1A1A;
+            --color-text-secondary: #555555;
+            --color-text-tertiary: #888888;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background-color: var(--color-warm-white);
+            color: var(--color-text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .section {
+            background-color: var(--color-white);
+            padding: 3rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--color-border-light);
+            border-radius: 8px;
+        }
+
+        h1 {
+            color: var(--color-charcoal);
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        h2 {
+            color: var(--color-dark-grey);
+            font-size: 1.75rem;
+            margin-bottom: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .color-swatch {
+            border: 1px solid var(--color-border-light);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+
+        .color-swatch:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .color-display {
+            height: 100px;
+            width: 100%;
+        }
+
+        .color-info {
+            padding: 1rem;
+            background-color: var(--color-white);
+        }
+
+        .color-name {
+            font-weight: 600;
+            color: var(--color-dark-grey);
+        }
+
+        .color-hex {
+            font-size: 0.875rem;
+            color: var(--color-text-tertiary);
+            font-family: monospace;
+        }
+
+        /* Component examples */
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background-color: var(--color-braun-orange);
+            color: var(--color-white);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--color-braun-orange-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .btn-secondary {
+            background-color: var(--color-white);
+            color: var(--color-dark-grey);
+            border: 1px solid var(--color-dark-grey);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--color-warm-white);
+            color: var(--color-charcoal);
+            border-color: var(--color-charcoal);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--color-dark-grey);
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--color-border-light);
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--color-braun-orange);
+            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.2);
+        }
+
+        .card {
+            background-color: var(--color-white);
+            border: 1px solid var(--color-border-light);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-card {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--color-charcoal);
+        }
+
+        .stat-label {
+            color: var(--color-medium-grey);
+            font-size: 0.875rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: var(--color-light-grey);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--color-braun-orange);
+            width: 65%;
+            transition: width 0.3s;
+        }
+
+        .nav {
+            display: flex;
+            gap: 2rem;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--color-border-light);
+            margin-bottom: 2rem;
+        }
+
+        .nav-link {
+            color: var(--color-dark-grey);
+            text-decoration: none;
+            font-weight: 500;
+            position: relative;
+            padding-bottom: 0.5rem;
+        }
+
+        .nav-link:hover {
+            color: var(--color-braun-orange);
+        }
+
+        .nav-link.active {
+            color: var(--color-braun-orange);
+        }
+
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: var(--color-braun-orange);
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="section">
+            <h1>Dieter Rams Braun-Inspired Color System</h1>
+            <p style="color: var(--color-text-secondary); font-size: 1.125rem; margin-bottom: 2rem;">
+                A minimalist color palette inspired by Dieter Rams' iconic designs for Braun, 
+                emphasizing functionality, clarity, and timeless aesthetics.
+            </p>
+
+            <h2>Color Palette</h2>
+            
+            <h3 style="color: var(--color-medium-grey); margin-bottom: 1rem;">Foundation Colors (60-70%)</h3>
+            <div class="color-grid">
+                <div class="color-swatch">
+                    <div class="color-display" style="background-color: var(--color-white);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Pure White</div>
+                        <div class="color-hex">#FFFFFF</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-display" style="background-color: var(--color-warm-white);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Warm White</div>
+                        <div class="color-hex">#F8F8F6</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-display" style="background-color: var(--color-light-grey);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Light Grey</div>
+                        <div class="color-hex">#EEEEEE</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="color: var(--color-medium-grey); margin-bottom: 1rem;">Structure Colors (20-30%)</h3>
+            <div class="color-grid">
+                <div class="color-swatch">
+                    <div class="color-display" style="background-color: var(--color-medium-grey);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Medium Grey</div>
+                        <div class="color-hex">#777777</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-display" style="background-color: var(--color-dark-grey);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Dark Grey</div>
+                        <div class="color-hex">#333333</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-display" style="background-color: var(--color-charcoal);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Charcoal</div>
+                        <div class="color-hex">#1A1A1A</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="color: var(--color-medium-grey); margin-bottom: 1rem;">Accent Colors (5-10%)</h3>
+            <div class="color-grid">
+                <div class="color-swatch">
+                    <div class="color-display" style="background-color: var(--color-braun-orange);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Braun Orange</div>
+                        <div class="color-hex">#FF6B35</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-display" style="background-color: var(--color-subtle-yellow);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Subtle Yellow</div>
+                        <div class="color-hex">#FFD700</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Component Examples</h2>
+
+            <h3 style="color: var(--color-medium-grey); margin-bottom: 1rem;">Navigation</h3>
+            <nav class="nav">
+                <a href="#" class="nav-link">Dashboard</a>
+                <a href="#" class="nav-link active">Simulations</a>
+                <a href="#" class="nav-link">Results</a>
+                <a href="#" class="nav-link">Settings</a>
+            </nav>
+
+            <h3 style="color: var(--color-medium-grey); margin-bottom: 1rem;">Buttons</h3>
+            <div class="button-group">
+                <button class="btn btn-primary">Run Simulation</button>
+                <button class="btn btn-secondary">Cancel</button>
+                <button class="btn btn-primary" disabled style="opacity: 0.5; cursor: not-allowed;">Processing...</button>
+            </div>
+
+            <h3 style="color: var(--color-medium-grey); margin-bottom: 1rem;">Form Elements</h3>
+            <div class="form-group">
+                <label for="iterations">Number of Iterations</label>
+                <input type="number" id="iterations" placeholder="1000" value="1000">
+            </div>
+
+            <h3 style="color: var(--color-medium-grey); margin-bottom: 1rem;">Statistics Cards</h3>
+            <div class="preview-grid">
+                <div class="card stat-card">
+                    <div class="stat-number">1,247</div>
+                    <div class="stat-label">Total Simulations</div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-number">98.5%</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-number">3.2s</div>
+                    <div class="stat-label">Avg. Runtime</div>
+                </div>
+            </div>
+
+            <h3 style="color: var(--color-medium-grey); margin-bottom: 1rem;">Progress Indicator</h3>
+            <div class="card">
+                <p style="margin-bottom: 0.5rem; color: var(--color-dark-grey);">Simulation Progress</p>
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <p style="color: var(--color-text-tertiary); font-size: 0.875rem;">65% Complete</p>
+            </div>
+        </div>
+
+        <div class="section" style="background-color: var(--color-warm-white);">
+            <h2>Design Principles</h2>
+            <div class="preview-grid">
+                <div>
+                    <h3 style="color: var(--color-dark-grey);">Less, but better</h3>
+                    <p style="color: var(--color-text-secondary);">
+                        The color palette embodies Rams' principle of restraint. 
+                        Every color serves a purpose, nothing is decorative.
+                    </p>
+                </div>
+                <div>
+                    <h3 style="color: var(--color-dark-grey);">Good design is honest</h3>
+                    <p style="color: var(--color-text-secondary);">
+                        Colors communicate function clearly. Orange indicates action, 
+                        greys provide hierarchy, white creates space.
+                    </p>
+                </div>
+                <div>
+                    <h3 style="color: var(--color-dark-grey);">Good design is long-lasting</h3>
+                    <p style="color: var(--color-text-secondary);">
+                        This timeless palette avoids trends, ensuring the interface 
+                        remains fresh and professional for years.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

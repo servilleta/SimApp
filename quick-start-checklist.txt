@@ -1,0 +1,60 @@
+# ⚡ Quick Daily Startup Checklist
+
+## 🚀 Mac → Paperspace Development Startup
+
+### Prerequisites ✓
+- [ ] Paperspace server powered ON
+- [ ] SSH config ready on Mac
+
+### Startup Commands (5 minutes)
+```bash
+# 1. SSH from Mac terminal:
+ssh paperspace
+
+# 2. Navigate and start Docker:
+cd PROJECT
+docker-compose down && docker-compose build --no-cache && docker-compose up -d
+
+# 3. Verify services:
+docker-compose ps
+
+# 4. (Optional) Start console monitor in new terminal:
+python3 backend/monitor_console.py --clear
+```
+
+### Access Points 🌐
+- **Main App:** http://localhost:9090 (on Mac browser)
+- **Backend:** http://localhost:8000
+- **Console logs:** SSH terminal (real-time)
+
+### Development Ready! 🎉
+- Edit code → Auto hot-reload
+- Console logs → Auto-stream to terminal
+- No manual refreshes needed
+
+---
+
+## 📋 Mac SSH Config Reference
+**File: `~/.ssh/config`**
+```
+Host paperspace
+    HostName 209.51.170.185
+    User paperspace
+    IdentityFile ~/.ssh/GpuServerSSH
+    StrictHostKeyChecking no
+    LocalForward 9090 localhost:9090
+    LocalForward 8000 localhost:8000
+    LocalForward 3000 localhost:3000
+    LocalForward 24678 localhost:24678
+```
+
+## 🛑 Shutdown
+```bash
+# Stop containers:
+docker-compose down
+
+# Exit SSH:
+exit
+
+# Power down Paperspace (optional)
+``` 

@@ -1,0 +1,33 @@
+{
+  "timestamp": "2025-09-19T11:47:59.053522",
+  "target": "http://localhost:9090/api",
+  "vulnerabilities": [],
+  "file_upload_endpoints": [
+    {
+      "endpoint": "/api/excel-parser/upload",
+      "status": 403,
+      "response_size": 30
+    }
+  ],
+  "security_measures": [],
+  "summary": {
+    "total_vulnerabilities": 0,
+    "critical_vulnerabilities": 0,
+    "high_vulnerabilities": 0,
+    "medium_vulnerabilities": 0,
+    "low_vulnerabilities": 0,
+    "risk_score": 0,
+    "endpoints_tested": 1,
+    "security_controls_detected": 0
+  },
+  "recommendations": [
+    "Implement comprehensive file type validation",
+    "Add antivirus scanning for all uploaded files",
+    "Validate and sanitize file names",
+    "Implement file size limits",
+    "Use secure file storage with access controls",
+    "Disable macro execution in Excel files",
+    "Implement content-based file validation",
+    "Add rate limiting for file uploads"
+  ]
+}

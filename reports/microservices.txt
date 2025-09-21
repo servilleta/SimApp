@@ -1,0 +1,682 @@
+# MICROSERVICES ARCHITECTURE MIGRATION GUIDE
+# Monte Carlo Simulation Platform - From Monolith to Microservices
+
+## 🔍 CURRENT MONOLITHIC ARCHITECTURE ANALYSIS
+
+### Current System Overview
+- **Single Backend**: FastAPI monolithic application (main.py - 219 lines)
+- **Single Frontend**: React SPA with all components bundled
+- **Single Database**: SQLite (montecarlo_app.db) handling all data
+- **Tightly Coupled Components**: 
+  - Authentication, Excel parsing, simulation engine, GPU management all in one process
+  - Shared dependencies and state management
+  - Single deployment unit with all services
+
+### Current Architecture Strengths
+✅ Simple deployment with docker-compose
+✅ Easy local development
+✅ Fast inter-component communication (in-memory)
+✅ Shared database transactions
+✅ Centralized configuration and logging
+
+### Current Architecture Limitations
+❌ **Scalability**: Cannot scale individual components independently
+❌ **Technology Lock-in**: All services must use Python/FastAPI
+❌ **Single Point of Failure**: One service crash affects entire system
+❌ **Development Bottlenecks**: Team must coordinate on single codebase
+❌ **Resource Inefficiency**: GPU-intensive simulations affect entire system
+❌ **Deployment Risk**: Single deployment affects all features
+❌ **Testing Complexity**: All components must be tested together
+
+---
+
+## 🏗️ RECOMMENDED MICROSERVICES ARCHITECTURE
+
+### Core Microservices Breakdown
+
+#### 1. **API Gateway Service**
+**Purpose**: Entry point, routing, authentication, rate limiting
+- **Technology**: Kong, Envoy, or custom FastAPI gateway
+- **Responsibilities**:
+  - Route requests to appropriate services
+  - Handle CORS and security headers
+  - Centralized rate limiting
+  - API versioning and documentation aggregation
+  - Request/response logging and monitoring
+
+#### 2. **Authentication & Authorization Service**
+**Purpose**: User management, JWT tokens, permissions
+- **Technology**: FastAPI + PostgreSQL
+- **Current Code**: `backend/auth/`
+- **Responsibilities**:
+  - User registration, login, logout
+  - JWT token generation and validation
+  - Role-based access control (RBAC)
+  - Password reset and user profile management
+  - Session management
+
+#### 3. **Excel Processing Service**
+**Purpose**: Excel file parsing, formula engine, data validation
+- **Technology**: FastAPI + Redis (caching)
+- **Current Code**: `backend/excel_parser/`
+- **Responsibilities**:
+  - Excel file upload and parsing
+  - Formula engine (47 functions implemented)
+  - Data validation and preprocessing
+  - Excel-to-JSON conversion
+  - Formula dependency analysis
+
+#### 4. **Simulation Engine Service**
+**Purpose**: Core Monte Carlo simulation logic
+- **Technology**: FastAPI + GPU acceleration
+- **Current Code**: `backend/simulation/`
+- **Responsibilities**:
+  - Monte Carlo simulation execution
+  - Probability distribution handling
+  - Variable override management
+  - Simulation result calculation
+  - Progress tracking and streaming
+
+#### 5. **GPU Computing Service**
+**Purpose**: GPU-accelerated mathematical operations
+- **Technology**: FastAPI + CUDA/CuPy
+- **Current Code**: `backend/gpu/`
+- **Responsibilities**:
+  - GPU resource management
+  - Parallel computation execution
+  - Memory pool management
+  - GPU task queuing and scheduling
+  - Performance monitoring
+
+#### 6. **Results & Analytics Service**
+**Purpose**: Result storage, analysis, visualization data prep
+- **Technology**: FastAPI + PostgreSQL + InfluxDB (time-series)
+- **Current Code**: `backend/results/`
+- **Responsibilities**:
+  - Simulation result storage
+  - Statistical analysis
+  - Data aggregation for visualization
+  - Historical result comparison
+  - Export functionality
+
+#### 7. **File Storage Service**
+**Purpose**: File management, uploads, metadata
+- **Technology**: FastAPI + MinIO/S3
+- **Current Code**: `backend/uploads/` + `saved_simulations_files/`
+- **Responsibilities**:
+  - File upload/download
+  - File metadata management
+  - File versioning
+  - Cleanup and retention policies
+  - Secure file access
+
+#### 8. **Saved Simulations Service**
+**Purpose**: Simulation templates, sharing, collaboration
+- **Technology**: FastAPI + PostgreSQL
+- **Current Code**: `backend/saved_simulations/`
+- **Responsibilities**:
+  - Simulation template management
+  - Simulation sharing and permissions
+  - Simulation history and versioning
+  - Collaboration features
+  - Simulation metadata search
+
+#### 9. **Notification Service**
+**Purpose**: Email, real-time notifications, webhooks
+- **Technology**: FastAPI + Redis + WebSocket
+- **Responsibilities**:
+  - Email notifications (simulation complete)
+  - Real-time WebSocket updates
+  - Webhook integrations
+  - Notification preferences
+  - Message queuing
+
+#### 10. **Frontend BFF (Backend for Frontend)**
+**Purpose**: Frontend-specific API aggregation
+- **Technology**: Node.js/FastAPI
+- **Responsibilities**:
+  - Aggregate data from multiple services
+  - Frontend-specific data formatting
+  - Reduce frontend API calls
+  - Handle frontend authentication
+  - WebSocket connection management
+
+---
+
+## 🔧 TECHNICAL IMPLEMENTATION STRATEGY
+
+### Phase 1: Database Decomposition (Weeks 1-2)
+**Objective**: Split monolithic database into service-specific databases
+
+#### Database Migration Plan:
+```
+Current: Single SQLite (montecarlo_app.db)
+Target: Service-specific databases
+
+1. **auth_service_db** (PostgreSQL)
+   - users table
+   - sessions table
+   - permissions table
+
+2. **simulations_db** (PostgreSQL)
+   - saved_simulations table
+   - simulation_results table
+   - simulation_metadata table
+
+3. **files_db** (PostgreSQL)
+   - file_metadata table
+   - file_permissions table
+
+4. **analytics_db** (InfluxDB/TimescaleDB)
+   - performance_metrics
+   - simulation_execution_data
+   - system_metrics
+
+5. **cache_layer** (Redis)
+   - Session storage
+   - Excel parsing cache
+   - Simulation progress tracking
+```
+
+### Phase 2: Service Extraction (Weeks 3-6)
+**Objective**: Extract services one by one, starting with least coupled
+
+#### Extraction Order:
+1. **Authentication Service** (Week 3)
+   - Extract `backend/auth/` module
+   - Create independent FastAPI service
+   - Implement JWT-based service-to-service auth
+   - Update API Gateway integration
+
+2. **File Storage Service** (Week 3)
+   - Extract file handling logic
+   - Implement MinIO/S3 backend
+   - Create file upload/download APIs
+   - Update frontend file handling
+
+3. **Excel Processing Service** (Week 4)
+   - Extract `backend/excel_parser/` module
+   - Add Redis caching layer
+   - Implement async processing for large files
+   - Create formula engine API
+
+4. **Results & Analytics Service** (Week 4)
+   - Extract results processing
+   - Implement time-series database
+   - Create analytics APIs
+   - Build visualization data endpoints
+
+5. **Simulation Engine Service** (Week 5)
+   - Extract core simulation logic
+   - Implement async task processing
+   - Create simulation status APIs
+   - Add progress streaming
+
+6. **GPU Computing Service** (Week 5)
+   - Extract GPU management
+   - Implement resource pooling
+   - Create compute task APIs
+   - Add performance monitoring
+
+7. **Notification Service** (Week 6)
+   - Implement WebSocket service
+   - Add email notification system
+   - Create real-time update APIs
+   - Build webhook support
+
+### Phase 3: Communication Layer (Weeks 7-8)
+**Objective**: Implement service-to-service communication
+
+#### Communication Patterns:
+```
+1. **Synchronous Communication** (HTTP/REST)
+   - API Gateway → Services (user requests)
+   - BFF → Multiple Services (data aggregation)
+   - Service → Service (immediate data needs)
+
+2. **Asynchronous Communication** (Message Queue)
+   - Simulation Engine → Notification Service
+   - Excel Processing → Simulation Engine
+   - GPU Computing → Results Service
+   - File Storage → Multiple Services
+
+3. **Event-Driven Architecture**
+   - User Registration → Welcome Email
+   - Simulation Complete → Result Processing
+   - File Upload → Processing Pipeline
+   - System Events → Monitoring/Alerting
+```
+
+#### Message Queue Implementation:
+```
+Technology: RabbitMQ or Apache Kafka
+
+Event Topics:
+- user.registered
+- simulation.started
+- simulation.completed
+- simulation.failed
+- file.uploaded
+- file.processed
+- system.alert
+- performance.metrics
+```
+
+### Phase 4: Frontend Decomposition (Weeks 9-10)
+**Objective**: Break frontend into micro-frontends or optimize for microservices
+
+#### Frontend Architecture Options:
+
+**Option A: Single SPA with Service Clients**
+```javascript
+// Centralized service clients
+services/
+├── authService.js       → Authentication Service
+├── excelService.js      → Excel Processing Service
+├── simulationService.js → Simulation Engine Service
+├── resultsService.js    → Results & Analytics Service
+├── filesService.js      → File Storage Service
+└── notificationService.js → WebSocket connections
+```
+
+**Option B: Micro-frontends**
+```
+Frontend Services:
+├── shell-app/           → Main application shell
+├── auth-app/           → Authentication UI
+├── excel-app/          → Excel processing UI
+├── simulation-app/     → Simulation configuration UI
+├── results-app/        → Results visualization UI
+└── shared-components/  → Common UI components
+```
+
+---
+
+## 🚀 DEPLOYMENT & INFRASTRUCTURE
+
+### Container Architecture
+```yaml
+# docker-compose.microservices.yml
+version: '3.8'
+
+services:
+  # Infrastructure
+  api-gateway:
+    image: kong:latest
+    ports: ["80:8000", "8001:8001"]
+    
+  redis:
+    image: redis:alpine
+    
+  postgres:
+    image: postgres:14
+    
+  rabbitmq:
+    image: rabbitmq:3-management
+    
+  minio:
+    image: minio/minio
+    
+  # Microservices
+  auth-service:
+    build: ./services/auth
+    environment:
+      - DATABASE_URL=postgresql://...
+      - REDIS_URL=redis://...
+      
+  excel-service:
+    build: ./services/excel
+    environment:
+      - REDIS_URL=redis://...
+      
+  simulation-service:
+    build: ./services/simulation
+    environment:
+      - GPU_ENABLED=true
+      - RABBITMQ_URL=amqp://...
+      
+  gpu-service:
+    build: ./services/gpu
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+              
+  results-service:
+    build: ./services/results
+    environment:
+      - DATABASE_URL=postgresql://...
+      
+  files-service:
+    build: ./services/files
+    environment:
+      - MINIO_URL=http://minio:9000
+      
+  notification-service:
+    build: ./services/notifications
+    environment:
+      - RABBITMQ_URL=amqp://...
+      - REDIS_URL=redis://...
+      
+  # Frontend
+  frontend:
+    build: ./frontend
+    ports: ["3000:80"]
+    environment:
+      - API_GATEWAY_URL=http://api-gateway:8000
+```
+
+### Kubernetes Migration (Future)
+```yaml
+# Example service configuration
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simulation-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: simulation-service
+  template:
+    metadata:
+      labels:
+        app: simulation-service
+    spec:
+      containers:
+      - name: simulation-service
+        image: simulation-service:latest
+        resources:
+          requests:
+            nvidia.com/gpu: 1
+          limits:
+            nvidia.com/gpu: 1
+```
+
+---
+
+## 📊 SCALABILITY BENEFITS
+
+### Independent Scaling
+```
+High Demand Scenarios:
+
+1. **Heavy Simulation Load**
+   - Scale: simulation-service (5 replicas)
+   - Scale: gpu-service (3 replicas)
+   - Keep: auth-service (1 replica)
+   
+2. **High User Registration**
+   - Scale: auth-service (3 replicas)
+   - Scale: notification-service (2 replicas)
+   - Keep: simulation-service (1 replica)
+   
+3. **Large Excel Processing**
+   - Scale: excel-service (4 replicas)
+   - Scale: files-service (2 replicas)
+   - Keep: other services minimal
+```
+
+### Resource Optimization
+```
+Service-Specific Resources:
+
+- **GPU Service**: High GPU, medium CPU, low memory
+- **Excel Service**: High CPU, high memory, no GPU
+- **Auth Service**: Low CPU, low memory, high availability
+- **Results Service**: Medium CPU, high memory (analytics)
+- **Notification Service**: Low CPU, low memory, high I/O
+```
+
+---
+
+## 🛡️ SECURITY CONSIDERATIONS
+
+### Service-to-Service Authentication
+```
+Implementation Options:
+
+1. **JWT with Service Keys**
+   - Each service has unique signing key
+   - Services validate tokens independently
+   - Include service permissions in JWT claims
+
+2. **mTLS (Mutual TLS)**
+   - Certificate-based authentication
+   - Encrypted service communication
+   - Certificate rotation automation
+
+3. **Service Mesh (Istio)**
+   - Automatic mTLS
+   - Traffic encryption
+   - Policy enforcement
+```
+
+### API Security
+```
+Security Layers:
+
+1. **API Gateway**
+   - Rate limiting per service
+   - IP whitelisting
+   - Request/response validation
+   
+2. **Service Level**
+   - Input validation
+   - Output sanitization
+   - Business logic authorization
+   
+3. **Data Level**
+   - Database encryption
+   - PII data masking
+   - Audit logging
+```
+
+---
+
+## 📈 MONITORING & OBSERVABILITY
+
+### Distributed Tracing
+```
+Implementation: OpenTelemetry + Jaeger
+
+Trace Flow Example:
+User Request → API Gateway → Auth Service → Excel Service → 
+Simulation Service → GPU Service → Results Service → Response
+```
+
+### Metrics Collection
+```
+Service Metrics:
+- Request/response times
+- Error rates and types
+- Resource utilization
+- Business metrics (simulations/hour)
+
+Infrastructure Metrics:
+- Container resource usage
+- Database performance
+- Queue depths
+- Network latency
+```
+
+### Logging Strategy
+```
+Centralized Logging: ELK Stack (Elasticsearch, Logstash, Kibana)
+
+Log Levels per Service:
+- ERROR: Service failures, data corruption
+- WARN: Performance degradation, fallbacks
+- INFO: Business events, service interactions
+- DEBUG: Detailed execution flow (dev only)
+```
+
+---
+
+## 🔄 MIGRATION TIMELINE & PHASES
+
+### Phase 1: Foundation (Weeks 1-2)
+- [ ] Set up infrastructure (databases, message queue, cache)
+- [ ] Implement API Gateway basic routing
+- [ ] Create service-to-service authentication
+- [ ] Set up monitoring and logging infrastructure
+
+### Phase 2: Core Services (Weeks 3-6)
+- [ ] Extract Authentication Service
+- [ ] Extract File Storage Service
+- [ ] Extract Excel Processing Service
+- [ ] Extract Results & Analytics Service
+- [ ] Extract Simulation Engine Service
+- [ ] Extract GPU Computing Service
+
+### Phase 3: Communication (Weeks 7-8)
+- [ ] Implement async messaging between services
+- [ ] Add event-driven architecture
+- [ ] Create service orchestration for complex workflows
+- [ ] Implement circuit breakers and fallbacks
+
+### Phase 4: Frontend & Polish (Weeks 9-10)
+- [ ] Update frontend to use new service endpoints
+- [ ] Implement WebSocket connections for real-time updates
+- [ ] Add comprehensive error handling
+- [ ] Performance testing and optimization
+
+### Phase 5: Production Readiness (Weeks 11-12)
+- [ ] Load testing and capacity planning
+- [ ] Security audit and penetration testing
+- [ ] Disaster recovery procedures
+- [ ] Documentation and team training
+- [ ] Gradual production rollout
+
+---
+
+## 💰 COST CONSIDERATIONS
+
+### Infrastructure Costs
+```
+Current vs. Microservices:
+
+Current (Single Server):
+- 1 GPU-enabled server: $500/month
+- Total: $500/month
+
+Microservices (Optimized):
+- 1 GPU server (simulation-service): $400/month
+- 2 CPU servers (other services): $200/month
+- Database hosting: $100/month
+- Load balancer: $50/month
+- Message queue: $30/month
+- Total: $780/month
+
+Cost Increase: 56% for improved scalability and reliability
+```
+
+### Development Costs
+```
+Short-term:
+- 3 months migration effort
+- 2-3 senior developers
+- Infrastructure setup and learning curve
+
+Long-term Benefits:
+- Parallel development teams
+- Independent deployments
+- Faster feature development
+- Reduced debugging time
+- Better system reliability
+```
+
+---
+
+## 🎯 SUCCESS METRICS
+
+### Technical Metrics
+- **Service Independence**: Each service deployable separately
+- **Fault Recovery**: Service failures don't cascade
+- **Scalability**: Individual services can scale 0-N instances
+- **Response Times**: API latency under 200ms (95th percentile)
+- **Uptime**: 99.9% availability per service
+
+### Business Metrics
+- **Development Velocity**: Feature delivery 2x faster
+- **System Reliability**: 50% reduction in system-wide failures
+- **Resource Efficiency**: 30% better resource utilization
+- **Team Productivity**: Parallel development capabilities
+- **Time to Market**: 40% faster new feature releases
+
+---
+
+## 🚨 RISKS & MITIGATION
+
+### Technical Risks
+1. **Distributed System Complexity**
+   - Risk: Network failures, service communication issues
+   - Mitigation: Circuit breakers, timeouts, retries, fallbacks
+
+2. **Data Consistency**
+   - Risk: Data inconsistency across services
+   - Mitigation: Event sourcing, saga patterns, eventual consistency
+
+3. **Performance Degradation**
+   - Risk: Network latency between services
+   - Mitigation: Caching, service co-location, async processing
+
+### Organizational Risks
+1. **Team Coordination**
+   - Risk: Service API changes breaking dependent services
+   - Mitigation: API versioning, contract testing, service ownership
+
+2. **Operational Complexity**
+   - Risk: Multiple services to monitor and maintain
+   - Mitigation: Service mesh, automated monitoring, DevOps practices
+
+---
+
+## 📚 RECOMMENDED TECHNOLOGIES
+
+### Core Infrastructure
+- **API Gateway**: Kong, AWS API Gateway, or Envoy
+- **Message Queue**: RabbitMQ (simpler) or Apache Kafka (high throughput)
+- **Service Mesh**: Istio (advanced) or Linkerd (simpler)
+- **Monitoring**: Prometheus + Grafana + Jaeger
+- **Logging**: ELK Stack or similar
+
+### Service Implementation
+- **Python Services**: FastAPI (consistent with current)
+- **Databases**: PostgreSQL (relational), Redis (cache), InfluxDB (metrics)
+- **File Storage**: MinIO (self-hosted) or AWS S3
+- **Container Orchestration**: Docker Compose → Kubernetes
+
+### Development Tools
+- **API Documentation**: OpenAPI/Swagger aggregation
+- **Testing**: Contract testing with Pact
+- **CI/CD**: GitLab CI or GitHub Actions with service-specific pipelines
+- **Local Development**: Docker Compose with service mocking
+
+---
+
+## 🏁 CONCLUSION
+
+The migration from monolithic to microservices architecture will provide:
+
+✅ **Independent Scalability**: Scale services based on demand
+✅ **Technology Flexibility**: Use best tools for each service
+✅ **Team Autonomy**: Parallel development and deployment
+✅ **Fault Isolation**: Service failures don't cascade
+✅ **Easier Maintenance**: Smaller, focused codebases
+
+**Recommended Approach**: Gradual migration over 12 weeks with careful planning and testing at each phase. The investment in infrastructure complexity will pay dividends in development velocity and system reliability.
+
+**Success depends on**: Strong DevOps practices, comprehensive monitoring, team training, and commitment to microservices best practices.
+
+---
+
+**Next Steps**: 
+1. Review this plan with the development team
+2. Set up development environment for Phase 1
+3. Begin database decomposition planning
+4. Establish monitoring and logging infrastructure
+5. Start with Authentication Service extraction as the first milestone

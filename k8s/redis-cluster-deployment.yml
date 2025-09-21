@@ -1,0 +1,270 @@
+# 🔴 REDIS CLUSTER DEPLOYMENT
+# Phase 3 Week 9-10: High Availability Redis Clustering
+# 
+# This configuration provides:
+# - 6-node Redis cluster (3 masters + 3 slaves)
+# - High availability and automatic failover
+# - Distributed caching for simulation results and progress
+# - Persistent storage with backup
+#
+# CRITICAL: This enhances caching for Ultra engine without modifying core functionality
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: redis-cluster
+  labels:
+    name: redis-cluster
+
+---
+# ConfigMap for Redis configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-cluster-config
+  namespace: redis-cluster
+data:
+  redis.conf: |
+    # Redis Cluster Configuration
+    port 6379
+    cluster-enabled yes
+    cluster-config-file nodes.conf
+    cluster-node-timeout 5000
+    cluster-announce-ip ${POD_IP}
+    cluster-announce-port 6379
+    cluster-announce-bus-port 16379
+    
+    # Persistence
+    appendonly yes
+    appendfsync everysec
+    
+    # Memory management
+    maxmemory 2gb
+    maxmemory-policy allkeys-lru
+    
+    # Security
+    requirepass ${REDIS_PASSWORD}
+    masterauth ${REDIS_PASSWORD}
+    
+    # Logging
+    loglevel notice
+    
+    # Performance
+    tcp-keepalive 60
+    timeout 300
+
+---
+# Headless service for Redis cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cluster
+  namespace: redis-cluster
+  labels:
+    app: redis-cluster
+spec:
+  clusterIP: None
+  ports:
+  - name: redis
+    port: 6379
+    targetPort: 6379
+  - name: cluster
+    port: 16379
+    targetPort: 16379
+  selector:
+    app: redis-cluster
+
+---
+# StatefulSet for Redis cluster nodes
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-cluster
+  namespace: redis-cluster
+spec:
+  serviceName: redis-cluster
+  replicas: 6
+  selector:
+    matchLabels:
+      app: redis-cluster
+  template:
+    metadata:
+      labels:
+        app: redis-cluster
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - name: redis
+          containerPort: 6379
+        - name: cluster
+          containerPort: 16379
+        
+        # Environment variables
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretRef:
+              name: redis-secret
+              key: password
+        
+        # Resource limits
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        
+        # Volume mounts
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+        - name: redis-config
+          mountPath: /etc/redis
+          readOnly: true
+        
+        # Command to start Redis with cluster configuration
+        command:
+        - redis-server
+        - /etc/redis/redis.conf
+        
+        # Health checks
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - -a
+            - $(REDIS_PASSWORD)
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - -a
+            - $(REDIS_PASSWORD)
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+      
+      volumes:
+      - name: redis-config
+        configMap:
+          name: redis-cluster-config
+  
+  # Persistent volume claim template
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 100Gi
+      storageClassName: fast-ssd
+
+---
+# Secret for Redis authentication
+apiVersion: v1
+kind: Secret
+metadata:
+  name: redis-secret
+  namespace: redis-cluster
+type: Opaque
+data:
+  password: UmVkaXNDbHVzdGVyUGFzc3dvcmQxMjM=  # Base64 encoded: RedisClusterPassword123
+
+---
+# Service for external access to Redis cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cluster-external
+  namespace: redis-cluster
+  labels:
+    app: redis-cluster
+spec:
+  type: LoadBalancer
+  ports:
+  - name: redis
+    port: 6379
+    targetPort: 6379
+  selector:
+    app: redis-cluster
+
+---
+# Job to initialize Redis cluster
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: redis-cluster-init
+  namespace: redis-cluster
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: redis-cluster-init
+        image: redis:7-alpine
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretRef:
+              name: redis-secret
+              key: password
+        command:
+        - /bin/sh
+        - -c
+        - |
+          # Wait for all Redis nodes to be ready
+          echo "Waiting for Redis nodes to be ready..."
+          for i in $(seq 0 5); do
+            until redis-cli -h redis-cluster-${i}.redis-cluster.redis-cluster.svc.cluster.local -a $REDIS_PASSWORD ping; do
+              echo "Waiting for redis-cluster-${i}..."
+              sleep 2
+            done
+          done
+          
+          # Create Redis cluster
+          echo "Creating Redis cluster..."
+          redis-cli -a $REDIS_PASSWORD --cluster create \
+            redis-cluster-0.redis-cluster.redis-cluster.svc.cluster.local:6379 \
+            redis-cluster-1.redis-cluster.redis-cluster.svc.cluster.local:6379 \
+            redis-cluster-2.redis-cluster.redis-cluster.svc.cluster.local:6379 \
+            redis-cluster-3.redis-cluster.redis-cluster.svc.cluster.local:6379 \
+            redis-cluster-4.redis-cluster.redis-cluster.svc.cluster.local:6379 \
+            redis-cluster-5.redis-cluster.redis-cluster.svc.cluster.local:6379 \
+            --cluster-replicas 1 --cluster-yes
+          
+          echo "Redis cluster initialized successfully!"
+
+---
+# ServiceMonitor for Prometheus monitoring
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: redis-cluster-monitor
+  namespace: redis-cluster
+  labels:
+    app: redis-cluster
+spec:
+  selector:
+    matchLabels:
+      app: redis-cluster
+  endpoints:
+  - port: redis
+    interval: 30s
+    path: /metrics

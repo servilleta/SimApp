@@ -1,0 +1,139 @@
+# FINAL PLAN: Monte Carlo Simulation Progress - The Robust Polling Architecture
+# Filename: stallsolution.txt
+# Version: 1.0
+# Date: August 6, 2025
+
+## 1. Executive Summary & Guiding Principles
+
+### 1.1. The Problem Redefined
+After an exhaustive review of all 30 prior debugging phases, the root cause is not a single bug, but **architectural fragility**. The system's reliance on a complex, real-time WebSocket architecture for a long-running, asynchronous task is the primary source of timing races, silent failures, and cascading symptoms.
+
+This plan replaces all previous plans. It implements a simpler, more robust industry-standard pattern to permanently eliminate these issues.
+
+### 1.2. Guiding Principles
+1.  **Simplicity over Complexity**: We will replace the fragile WebSocket system with a standard RESTful polling mechanism. This eliminates entire classes of timing and connectivity bugs.
+2.  **Fail Fast & Loud**: Silent failures (like GPU validation) are forbidden. The backend will report failures explicitly, and the frontend will display them. No more false "completed" statuses.
+3.  **Decoupled Architecture**: The backend's job is to run simulations and report status to a persistent store (Redis). The frontend's job is to ask for that status. They are not in a tightly coupled, real-time conversation.
+4.  **Test-Driven Confidence**: Every major change will be accompanied by automated tests to prove functionality and prevent future regressions.
+5.  **User Rules Compliance**: Per your rules, there will be no silent fallbacks or placeholders. We will build a generic system that works for any valid Excel model.
+
+---
+
+## 2. File Map & Key Modules to be Modified
+
+This plan will touch the following key areas:
+
+*   **Backend (Python/FastAPI)**
+    *   `backend/simulation/service.py`: To orchestrate simulation runs and handle failures. **CRITICAL: GPU failure logic will be hardened here.**
+    *   `backend/simulation/router.py`: To expose the new `/progress` REST endpoint.
+    *   `backend/simulation/engines/ultra_engine.py`: To implement progress chunking and robust GPU validation.
+    *   `backend/tests/`: **NEW** `pytest` files for integration and unit tests.
+
+*   **Frontend (React/Redux)**
+    *   `frontend/src/store/simulationSlice.js`: To initiate polling after a simulation starts.
+    *   `frontend/src/services/progressManager.js` (or similar): To house the new polling logic.
+    *   `frontend/src/components/simulation/UnifiedProgressTracker.jsx`: To display progress based on polled data, removing optimistic placeholders.
+    *   `frontend/src/services/websocketService.js`: To be **DEPRECATED AND REMOVED**.
+    *   `cypress/e2e/`: **NEW** `progress.spec.js` for end-to-end user flow testing.
+
+*   **Infrastructure**
+    *   `docker-compose.yml`: To ensure testing dependencies are available.
+    *   `.github/workflows/ci.yml`: **NEW** file to automate testing.
+
+---
+
+## 3. Phased Execution Plan
+
+### PHASE 1: Establish a Test-Driven Foundation (2 hours)
+
+*Objective: Create a failing test that proves the bug exists. This test becomes our benchmark for success.*
+
+1.  **Clean Environment**: Start from a clean `git` branch.
+2.  **Create Smoke Test**: In `backend/tests/integration/test_smoke.py`, create a new `pytest` test that:
+    *   Uses the FastAPI `TestClient` to programmatically upload a simple, valid Excel file.
+    *   POSTs to `/api/simulations/run` to start a small (e.g., 100 iterations) simulation.
+    *   Polls a (yet to be created) `/api/simulations/progress/{sim_id}` endpoint in a loop.
+    *   **Asserts** that the final status is `completed` and that `current_iteration` is greater than 0.
+3.  **Confirm Failure**: Run the test. **It must fail.** This is our starting point and proves the unreliability of the current system.
+
+### PHASE 2: Build the Reliable Backend (4 hours)
+
+*Objective: Rearchitect the backend to provide a simple, pollable status API and handle failures robustly.*
+
+1.  **Harden GPU Validation**:
+    *   In `backend/simulation/engines/ultra_engine.py`, find the `benchmark_gpu_vs_cpu` or equivalent validation logic.
+    *   Add **verbose logging** for the actual vs. expected results (shape, mean, std dev).
+    *   If validation fails, `raise RuntimeError("GPU validation failed: [details]")`. **Do not proceed.**
+2.  **Implement Robust Failure Handling**:
+    *   In `backend/simulation/service.py`, wrap the call to the Ultra Engine in a `try...except RuntimeError`.
+    *   On exception, immediately update the simulation status in Redis to `{"status": "failed", "progress_percentage": 0, "error": "GPU validation failed..."}`.
+    *   **Crucially, a failed simulation must never be marked as `completed`.**
+3.  **Create the Progress Endpoint**:
+    *   In `backend/simulation/router.py`, create a new GET endpoint: `/api/simulations/progress/{simulation_id}`.
+    *   This endpoint should read the simulation's data directly from `progress_store` (Redis) and return it as a JSON response. It is a simple, stateless read.
+4.  **Modify the Run Endpoint**:
+    *   The `POST /api/simulations/run` endpoint should no longer wait for any result. Its only job is to start the background task.
+    *   It should immediately return an `HTTP 202 Accepted` response. The body of the response should be a JSON object containing the `simulation_id` for the parent simulation.
+5.  **Implement Progress Chunking**:
+    *   In `backend/simulation/engines/ultra_engine.py`, modify the main simulation loop. Instead of running all iterations at once, run them in chunks (e.g., of 100).
+    *   After each chunk, call `_update_progress` to save the new `current_iteration` to Redis. This ensures the `/progress` endpoint always serves fresh data.
+
+### PHASE 3: Rearchitect the Frontend for Polling (3 hours)
+
+*Objective: Rip out the fragile WebSocket logic and replace it with a robust polling mechanism.*
+
+1.  **Initiate Polling**:
+    *   In `frontend/src/store/simulationSlice.js`, find the `runSimulation` async thunk.
+    *   When the API call returns `202 Accepted` with the `simulation_id`, dispatch a new action to start polling for that ID.
+2.  **Create the Polling Service**:
+    *   Create a new service, e.g., `frontend/src/services/progressPollingService.js`.
+    *   This service will contain a function, `startPolling(simulationId, dispatch)`, which:
+        *   Uses `setInterval` to call `fetch(/api/simulations/progress/{simulationId})` every 3 seconds.
+        *   On success, it dispatches an action (e.g., `updateProgress(data)`) with the new progress data.
+        *   When the response shows `status: "completed"` or `status: "failed"`, it clears the interval (`clearInterval`) to stop polling.
+3.  **Update the UI**:
+    *   In `frontend/src/components/simulation/UnifiedProgressTracker.jsx`:
+        *   Remove all `useEffect` hooks related to WebSocket connections.
+        *   The component should now simply display the progress data it receives from the Redux store.
+        *   **Remove the optimistic progress ramp-up.** While the backend progress is 0 and the status is "pending" or "running", display an indeterminate spinner and a "Waiting for backend..." message.
+4.  **Deprecate WebSocket Code**:
+    *   Delete `frontend/src/services/websocketService.js`.
+    *   Remove all related imports and calls throughout the frontend.
+
+### PHASE 4: End-to-End Testing and CI Hardening (2 hours)
+
+*Objective: Prove the new architecture works and lock it down with automated tests.*
+
+1.  **Run Backend Tests**:
+    *   The `pytest` smoke test from Phase 1 should now **pass**.
+    *   Add a new unit test for the GPU failure case, asserting that the status becomes `failed`.
+2.  **Create Frontend E2E Test**:
+    *   In `cypress/e2e/progress.spec.js`, create a new test that:
+        *   Logs in, uploads a file, and clicks "Run Simulation".
+        *   Asserts that a spinner with a "Waiting..." message appears.
+        *   Asserts that within 5 seconds, the progress bar appears and shows a value > 0%.
+        *   Asserts that the progress bar eventually reaches 100% and the results are displayed.
+3.  **Set up CI Pipeline**:
+    *   Create `.github/workflows/ci.yml`.
+    *   Configure the pipeline to run `pytest` and `cypress run` on every pull request.
+    *   **A pull request that breaks the progress monitoring workflow must be blocked from merging.**
+
+### PHASE 5: Finalization (1 hour)
+
+*Objective: Prepare the system for deployment.*
+
+1.  **Full System Rebuild**: Reflecting on user rules, perform a final, full Docker rebuild to ensure a clean state for testing: `docker compose down && docker compose build --no-cache && docker compose up -d`.
+2.  **Manual Verification**: Run one final, comprehensive test using a large, multi-target Excel file to confirm the end-to-end experience is smooth, reliable, and stall-free.
+3.  **Documentation**: Update the project's `README.md` to briefly describe the new, robust polling architecture for future developers.
+
+---
+
+## 4. Success Criteria
+
+This project is **complete and successful** when:
+
+1.  The 50%/60% progress stall is **completely eliminated**.
+2.  The UI provides **continuous, real feedback** on the simulation's progress, including elapsed time and iteration count.
+3.  A GPU validation failure results in a clear "Failed" state in the UI, **not a false "Completed" state**.
+4.  The automated `pytest` and `cypress` test suites are passing in CI, providing a safety net against future regressions.
+5.  The system is demonstrably more resilient, simpler to debug, and free from the timing-related bugs of the previous architecture.

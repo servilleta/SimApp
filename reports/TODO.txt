@@ -1,0 +1,237 @@
+# Monte Carlo Simulation Web Platform - Implementation TODO List
+# Status Key: [x] Done, [~] Partially Implemented/Needs Refinement, [P] Placeholder, [ ] To Do
+
+## Phase 1: Project Setup and Environment Configuration
+1. [x] Create project directory structure
+   - [x] Create backend directory with subdirectories (auth, excel_parser, simulation, results, gpu)
+   - [x] Create frontend directory with subdirectories (public, src/components, src/hooks, src/pages, src/services, src/store, src/utils)
+   - [x] Set up version control with Git (User initialized Git, configured user)
+   - [x] Initialize .gitignore file
+
+2. [~] Backend Environment Setup
+   - [ ] Create Python virtual environment (User task)
+   - [x] Install required Python packages (requirements.txt updated with auth & asteval libs)
+     - [x] FastAPI, uvicorn, pydantic, python-multipart
+     - [x] pandas, openpyxl for Excel processing
+     - [x] numpy, scipy for calculations
+     - [x] joblib for parallel processing
+     - [x] pynvml for GPU management
+     - [x] passlib[bcrypt], python-jose[cryptography] for authentication
+     - [x] asteval for secure formula evaluation
+   - [~] Set up environment variables (.env file) (User task, config.py updated, .env example provided. **SECRET_KEY IS CRUCIAL**)
+   - [ ] Configure logging (Basic print statements exist, formal logging needed)
+
+3. [x] Frontend Environment Setup
+   - [ ] Initialize React project with Vite (User task)
+   - [x] Install required npm packages (package.json created)
+     - [x] React, React DOM, React Router
+     - [x] Redux Toolkit, React Redux
+     - [x] Plotly.js, React-Plotly.js
+     - [x] Formik, Yup for form handling
+     - [x] Axios for API calls
+     - [x] TailwindCSS for styling
+   - [P] Set up environment variables (User task, .env.example would be helpful)
+   - [x] Configure build process (Scripts in package.json)
+
+## Phase 2: Backend Development
+1. [x] Core API Setup
+   - [x] Implement FastAPI application structure (main.py)
+   - [x] Set up CORS middleware (main.py)
+   - [x] Configure API routes and endpoints (main.py includes routers with prefixes)
+   - [x] Implement health check endpoint (main.py)
+
+2. [~] Excel Parser Module
+   - [x] Create Excel file upload endpoint (excel_parser/router.py - now secured)
+   - [x] Implement Excel file parsing logic (excel_parser/service.py: parse_excel_file)
+   - [~] Add data validation and error handling (Basic handling exists, can be improved)
+   - [x] Create preview functionality (Part of parse_excel_file result)
+   - [x] Implement formula extraction (excel_parser/service.py: parse_excel_file)
+   - [P] `get_file_variables` (excel_parser/service.py - placeholder, needs storage logic)
+   - [P] `get_file_info` (excel_parser/service.py - placeholder, needs storage logic)
+   - [P] `utils.py` (excel_parser/utils.py - placeholder)
+
+3. [~] Simulation Engine
+   - [~] Implement Monte Carlo simulation core (simulation/engine.py: MonteCarloSimulation class)
+   - [x] Add triangular distribution support (np.random.triangular, cp.random.triangular)
+   - [x] Create simulation configuration endpoints (simulation/router.py: /run, /{simulation_id} - now secured)
+   - [P] Implement parallel processing (ThreadPoolExecutor for CPU, but true parallel chunking not yet)
+   - [~] Add progress tracking (Currently done by storing final status. Finer-grained progress not yet.)
+   - [x] Secure formula evaluation (simulation/engine.py - **REPLACED `eval()` with `asteval`**)
+   - [P] `utils.py` (simulation/utils.py - placeholder)
+
+4. [~] GPU Integration
+   - [ ] Set up NVIDIA GPU operator (Deployment concern, not app code yet)
+   - [x] Implement GPU resource management (gpu/manager.py: GPUManager class)
+   - [~] Create GPU-accelerated simulation functions (simulation/engine.py: _run_simulation_gpu - asteval on CPU for formula)
+   - [x] Add VRAM monitoring and management (Basic in gpu/manager.py, can be enhanced)
+   - [x] Implement fallback to CPU when GPU unavailable (simulation/engine.py, gpu/manager.py)
+   - [P] `scheduler.py`, `utils.py` (gpu/... - placeholders)
+
+5. [P] Results Processing
+   - [P] Create results aggregation logic (results/service.py - basic summary from in-memory store)
+   - [x] Implement statistical calculations (simulation/engine.py: _calculate_statistics - NaN handling improved)
+   - [ ] Add data export functionality
+   - [P] Create caching mechanism (No explicit cache beyond in-memory store)
+   - [P] `SIMULATION_RESULTS_STORE` (simulation/service.py - **in-memory, needs persistent storage**)
+   - [P] `utils.py` (results/utils.py - placeholder)
+
+6. [~] Authentication Module (auth/)
+   - [x] Implement JWT token generation with `python-jose` (auth/service.py)
+   - [x] Implement user retrieval & token validation with `python-jose` (auth/dependencies.py, auth/service.py)
+   - [x] Implement user creation with `passlib` password hashing (auth/service.py)
+   - [x] Create user registration endpoint (`/auth/register` in auth/router.py)
+   - [x] Create OAuth2 compatible login endpoint (`/auth/token` in auth/router.py)
+   - [x] Create protected example endpoint (`/auth/users/me` in auth/router.py)
+   - [x] Configured `SECRET_KEY`, `ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES` (config.py, needs .env)
+   - [x] Secured other API modules (excel_parser, simulation, results)
+
+7. [ ] Shared Files
+    - [ ] `models.py` (Placeholder/To Do - for DB models if ORM is used)
+    - [ ] `exceptions.py` (Placeholder/To Do - for custom exceptions)
+
+## Phase 3: Frontend Development
+1. [P] Core UI Components
+   - [P] Create layout components (Header, Footer, MainLayout.jsx)
+   - [P] Implement navigation (Basic in Header and App.jsx)
+   - [P] Add responsive design (Not explicitly addressed, basic inline styles used)
+   - [P] Create loading and error states (Placeholder Loading component)
+   - [ ] **Integrate Authentication with Frontend**
+     - [ ] Create Login/Register pages/components
+     - [ ] Implement API calls to `/auth/token` and `/auth/register`
+     - [ ] Securely store JWT (localStorage/HttpOnly cookie)
+     - [ ] Add JWT to `Authorization` header for API calls
+     - [ ] Implement logout functionality
+     - [ ] Protect routes based on authentication state
+     - [ ] Update `authService.js` and `useAuth.js`
+
+2. [P] Excel Upload Interface
+   - [P] Create file upload component (ExcelUploader.jsx with react-dropzone)
+   - [P] Implement drag-and-drop functionality (Part of ExcelUploader.jsx)
+   - [P] Add file preview (ExcelPreview.jsx using Redux state)
+   - [P] Create progress indicators (Basic loading state in ExcelUploader.jsx)
+
+3. [P] Simulation Configuration
+   - [P] Create variable configuration interface (Placeholder in SimulationForm.jsx)
+   - [P] Implement formula builder (Placeholder in SimulationForm.jsx)
+   - [P] Add validation and error handling (Basic alerts in SimulationForm.jsx, asteval errors on backend)
+   - [P] Create simulation parameters form (Part of SimulationForm.jsx for iterations, GPU toggle)
+
+4. [P] Results Visualization
+   - [P] Implement histogram visualization (Placeholder ChartComponent.jsx, ResultsDisplay shows raw data)
+   - [P] Create statistical summary display (Basic table in ResultsDisplay.jsx)
+   - [P] Add interactive charts (Placeholder ChartComponent.jsx)
+   - [P] Implement data export options (Not implemented)
+
+5. [P] State Management
+   - [P] Set up Redux store (store/index.js with excelSlice, simulationSlice)
+   - [ ] Create/Update `authSlice.js` for user state and tokens
+   - [P] Create API service layer (services/api.js, excelService.js, simulationService.js, authService.js)
+   - [P] Implement caching strategy (Not implemented beyond default browser behavior / Redux store persistence)
+   - [P] Add error handling (Basic error states in slices and components, needs auth error handling)
+
+6. [P] Page Structure
+   - [P] Create main App.jsx with routing (react-router-dom setup)
+   - [P] Implement placeholder pages (Dashboard, Upload, Configure, Results)
+
+7. [P] Component Library
+   - [P] Create common components (Button, Input, Modal - all placeholders with basic styling)
+   - [P] Create dashboard specific components (SummaryMetrics - placeholder)
+   - [P] Create excel-parser specific components (ExcelUploader, ExcelPreview - placeholders with basic logic)
+   - [P] Create simulation specific components (SimulationForm - placeholder with basic logic)
+   - [P] Create results specific components (ResultsDisplay, ChartComponent - placeholders with basic logic)
+
+8. [P] Utility Functions & Hooks
+   - [P] Create formatting utilities (utils/formatting.js - placeholder)
+   - [P] Define global constants (utils/constants.js - placeholder)
+   - [~] Implement custom hooks (hooks/useAuth.js - placeholder, needs authSlice and logic)
+
+## Phase 4: Testing and Quality Assurance
+1. [ ] Backend Testing
+   - [ ] Write unit tests for core functionality (especially auth and simulation engine)
+   - [ ] Create integration tests for API endpoints (including auth)
+   - [ ] Implement performance tests
+   - [ ] Add GPU-specific tests
+
+2. [ ] Frontend Testing
+   - [ ] Write component tests (especially auth forms)
+   - [ ] Create integration tests
+   - [ ] Implement end-to-end tests (login, upload, simulate, view results workflow)
+   - [ ] Add performance benchmarks
+
+3. [~] Security Testing
+   - [ ] Perform security audit (ongoing)
+   - [ ] Test file upload security (Basic checks in place, more needed)
+   - [~] Validate API security (Endpoints now protected, JWT in use)
+   - [~] Check for vulnerabilities (Replaced `eval()`)
+   - [ ] Test against common web vulnerabilities (XSS, CSRF, etc. - especially for frontend)
+
+## Phase 5: Deployment and DevOps
+1. [x] Containerization
+   - [x] Create Dockerfile for backend
+   - [x] Create Dockerfile for frontend
+   - [x] Set up Docker Compose for local development
+   - [ ] Configure multi-stage builds (Basic multi-stage exists, can be optimized)
+
+2. [ ] Kubernetes Setup
+   - [ ] Create deployment configurations
+   - [ ] Set up services and ingress
+   - [ ] Configure resource limits
+   - [ ] Implement auto-scaling
+
+3. [ ] Monitoring and Logging
+   - [ ] Set up Prometheus for metrics
+   - [ ] Configure Grafana dashboards
+   - [ ] Implement centralized logging
+   - [ ] Create alerting rules
+
+4. [ ] CI/CD Pipeline
+   - [ ] Set up automated testing
+   - [ ] Configure build pipeline
+   - [ ] Implement deployment automation
+   - [ ] Add quality gates
+
+## Phase 6: Documentation and Maintenance
+1. [x] Documentation (Initial Markdown files provided by user)
+   - [ ] Create API documentation (Auto-docs from FastAPI available, can be enhanced, auth endpoints added)
+   - [ ] Write user guides (Including how to register/login)
+   - [ ] Document deployment procedures (Including .env setup for SECRET_KEY)
+   - [ ] Create maintenance guides
+
+2. [ ] Performance Optimization
+   - [ ] Optimize database queries (Once DB is in place)
+   - [ ] Improve frontend performance
+   - [~] Enhance GPU utilization (Formula evaluation on CPU path using asteval for safety)
+   - [ ] Implement caching strategies
+
+3. [ ] Backup and Recovery
+   - [ ] Set up automated backups (Once DB is in place for users/results)
+   - [ ] Create recovery procedures
+   - [ ] Implement data retention policies
+   - [ ] Test backup restoration
+
+## Phase 7: Final Steps
+1. [ ] Final Testing
+   - [ ] Perform load testing
+   - [ ] Conduct security audit
+   - [ ] Test backup and recovery
+   - [ ] Validate all features
+
+2. [ ] Deployment
+   - [ ] Deploy to production
+   - [ ] Monitor initial performance
+   - [ ] Address any issues
+   - [ ] Document deployment
+
+3. [ ] Post-Launch
+   - [ ] Monitor system performance
+   - [ ] Gather user feedback
+   - [ ] Plan future improvements
+   - [ ] Create maintenance schedule
+
+## Notes
+- Each task should be completed in order (flexibility allowed based on dependencies)
+- Regular testing should be performed throughout development
+- Documentation should be updated as features are implemented
+- **Security considerations (e.g., `eval()` replacement, input validation, HTTPS, strong SECRET_KEY) should be prioritized.**
+- Performance optimization should be ongoing
+- **Critical: Replace in-memory stores (users, simulation results) with a persistent database before any production use.** 

@@ -1,0 +1,12 @@
+# AI Layer Requirements
+# Add these to your main requirements.txt
+
+# HTTP client for DeepSeek API
+aiohttp>=3.8.0
+
+# Scientific computing (if not already included)
+scipy>=1.10.0
+pandas>=1.5.0
+
+# Enhanced network analysis for dependency graphs
+networkx>=3.0

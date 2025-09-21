@@ -1,0 +1,51 @@
+# 🔍 LOGSTASH CONFIGURATION - Enterprise Monitoring
+# Phase 5 Week 17-18: Centralized Log Processing
+#
+# This configuration processes logs from:
+# - Monte Carlo Backend
+# - Frontend Application  
+# - Enterprise Services
+# - System Logs
+
+# Node settings
+node.name: "monte-carlo-logstash"
+path.data: /usr/share/logstash/data
+path.config: /usr/share/logstash/pipeline
+path.logs: /usr/share/logstash/logs
+
+# Pipeline settings
+pipeline.workers: 2
+pipeline.batch.size: 125
+pipeline.batch.delay: 50
+
+# HTTP API settings
+http.host: "0.0.0.0"
+http.port: 9600
+
+# Logging settings
+log.level: info
+path.logs: /usr/share/logstash/logs
+
+# Config reload
+config.reload.automatic: true
+config.reload.interval: 3s
+
+# Dead letter queue
+dead_letter_queue.enable: true
+dead_letter_queue.max_bytes: 1024mb
+
+# Monitoring
+monitoring.enabled: true
+
+# Performance tuning for Monte Carlo workloads
+queue.type: memory
+queue.max_events: 0
+queue.max_bytes: 1gb
+
+# JVM settings for large simulation logs
+pipeline.java_execution: true
+pipeline.plugin_classloaders: false
+
+# Elasticsearch output settings
+output.elasticsearch.template_name: "monte-carlo"
+output.elasticsearch.template_pattern: "monte-carlo-*"

@@ -1,0 +1,1008 @@
+# Arrow Native Monte Carlo Platform Upgrade Plan
+*Implementation Roadmap for Large File Processing*
+
+## EXECUTIVE SUMMARY
+
+This plan outlines the transformation of our Monte Carlo simulation platform from traditional row-based processing to Arrow native architecture. The upgrade will solve current large file limitations, eliminate the "zeros" bug, and achieve 10-100x performance improvements.
+
+**Current Issues Addressed:**
+- Large files (>50K formulas) returning all zeros
+- Memory exhaustion with complex Excel models  
+- Single-column histograms instead of proper distributions
+- Performance bottlenecks preventing real-time analysis
+
+**Target Performance:**
+- Handle 500MB+ Excel files (current limit: crashes)
+- Process 1M+ simulations in real-time
+- Reduce memory usage by 60-80%
+- Enable streaming results and live histograms
+
+## PHASE 1: FOUNDATION SETUP (Weeks 1-2)
+
+### 1.1 Arrow Libraries Integration
+
+**Backend Dependencies:**
+```bash
+# Python Arrow ecosystem
+pip install pyarrow>=14.0.0
+pip install pandas[arrow]>=2.0.0
+pip install duckdb>=0.9.0  # For Arrow native SQL operations
+pip install adbc-driver-duckdb  # High-performance database connectivity
+
+# Optional performance boosters
+pip install polars>=0.20.0  # Ultra-fast Arrow native dataframes
+pip install fastparquet>=2024.2.0  # Arrow native parquet support
+```
+
+**Frontend Dependencies:**
+```bash
+# JavaScript Arrow support
+npm install apache-arrow@latest
+npm install @observablehq/arquero  # Arrow-based data manipulation
+npm install @uwdata/vgplot  # Arrow native visualization
+```
+
+### 1.2 Development Environment Setup
+
+**New Directory Structure:**
+```
+backend/
+├── arrow_engine/           # New Arrow native simulation engine
+│   ├── __init__.py
+│   ├── arrow_loader.py     # Excel → Arrow conversion
+│   ├── arrow_simulator.py  # Arrow native Monte Carlo
+│   ├── arrow_stats.py      # Statistical calculations
+│   └── arrow_streaming.py  # Real-time result streaming
+├── arrow_utils/
+│   ├── schema_builder.py   # Arrow schema definitions
+│   ├── memory_manager.py   # Arrow memory pool management
+│   └── compression.py      # Arrow compression utilities
+└── tests/
+    ├── test_arrow_engine.py
+    └── benchmark_arrow.py
+```
+
+### 1.3 Arrow Schema Design
+
+**Monte Carlo Data Schema:**
+```python
+# arrow_engine/schema_builder.py
+import pyarrow as pa
+
+# Input parameters schema
+PARAMETERS_SCHEMA = pa.schema([
+    ('cell_id', pa.string()),
+    ('formula', pa.string()),
+    ('distribution_type', pa.string()),  # normal, uniform, triangular, etc.
+    ('param1', pa.float64()),           # mean, min, etc.
+    ('param2', pa.float64()),           # std, max, etc.
+    ('param3', pa.float64()),           # optional third parameter
+    ('correlation_group', pa.string()),
+    ('dependencies', pa.list_(pa.string()))
+])
+
+# Simulation results schema
+RESULTS_SCHEMA = pa.schema([
+    ('iteration', pa.uint32()),
+    ('cell_id', pa.string()),
+    ('value', pa.float64()),
+    ('timestamp', pa.timestamp('ms'))
+])
+
+# Statistics schema
+STATISTICS_SCHEMA = pa.schema([
+    ('cell_id', pa.string()),
+    ('mean', pa.float64()),
+    ('std_dev', pa.float64()),
+    ('min_value', pa.float64()),
+    ('max_value', pa.float64()),
+    ('percentile_5', pa.float64()),
+    ('percentile_25', pa.float64()),
+    ('percentile_50', pa.float64()),
+    ('percentile_75', pa.float64()),
+    ('percentile_95', pa.float64()),
+    ('var_95', pa.float64()),          # Value at Risk
+    ('cvar_95', pa.float64()),         # Conditional Value at Risk
+    ('histogram_bins', pa.list_(pa.float64())),
+    ('histogram_counts', pa.list_(pa.uint32()))
+])
+```
+
+## PHASE 2: ARROW NATIVE DATA LOADING (Weeks 3-4)
+
+### 2.1 Excel to Arrow Converter
+
+**Replace Current Excel Parser:**
+```python
+# arrow_engine/arrow_loader.py
+import pyarrow as pa
+import pandas as pd
+from openpyxl import load_workbook
+import re
+from typing import Dict, List, Tuple
+
+class ArrowExcelLoader:
+    def __init__(self, memory_pool_size_gb: int = 4):
+        # Create Arrow memory pool for efficient memory management
+        self.memory_pool = pa.MemoryPool.create(memory_pool_size_gb * 1024**3)
+        
+    def load_excel_to_arrow(self, file_path: str) -> pa.Table:
+        """
+        Convert Excel file directly to Arrow table
+        Handles large files through streaming processing
+        """
+        # Phase 1: Extract formulas and identify simulation parameters
+        wb = load_workbook(file_path, data_only=False)
+        
+        parameters_data = []
+        dependencies = {}
+        
+        for sheet_name in wb.sheetnames:
+            ws = wb[sheet_name]
+            for row in ws.iter_rows():
+                for cell in row:
+                    if cell.value and isinstance(cell.value, str) and cell.value.startswith('='):
+                        param_data = self._parse_simulation_cell(cell, sheet_name)
+                        if param_data:
+                            parameters_data.append(param_data)
+                            
+        # Phase 2: Build dependency graph
+        dependency_graph = self._build_dependency_graph(parameters_data)
+        
+        # Phase 3: Create Arrow table with optimized memory layout
+        return pa.Table.from_pydict({
+            'cell_id': [p['cell_id'] for p in parameters_data],
+            'formula': [p['formula'] for p in parameters_data],
+            'distribution_type': [p['distribution_type'] for p in parameters_data],
+            'param1': [p['param1'] for p in parameters_data],
+            'param2': [p['param2'] for p in parameters_data],
+            'param3': [p['param3'] for p in parameters_data],
+            'correlation_group': [p['correlation_group'] for p in parameters_data],
+            'dependencies': [dependency_graph.get(p['cell_id'], []) for p in parameters_data]
+        }, schema=PARAMETERS_SCHEMA)
+    
+    def _parse_simulation_cell(self, cell, sheet_name: str) -> Dict:
+        """
+        Parse Excel cell formula to extract Monte Carlo parameters
+        Supports: NORM.INV(RAND(), mean, std), UNIFORM(min, max), etc.
+        """
+        cell_id = f"{sheet_name}!{cell.coordinate}"
+        formula = cell.value
+        
+        # Extract distribution patterns
+        if 'NORM.INV' in formula and 'RAND()' in formula:
+            # Extract normal distribution parameters
+            params = self._extract_params_from_formula(formula)
+            return {
+                'cell_id': cell_id,
+                'formula': formula,
+                'distribution_type': 'normal',
+                'param1': params.get('mean', 0.0),
+                'param2': params.get('std', 1.0),
+                'param3': 0.0,
+                'correlation_group': params.get('correlation_group', ''),
+            }
+        elif 'UNIFORM' in formula:
+            params = self._extract_params_from_formula(formula)
+            return {
+                'cell_id': cell_id,
+                'formula': formula,
+                'distribution_type': 'uniform',
+                'param1': params.get('min', 0.0),
+                'param2': params.get('max', 1.0),
+                'param3': 0.0,
+                'correlation_group': '',
+            }
+        
+        return None
+```
+
+### 2.2 Memory-Efficient Processing
+
+**Streaming Data Processor:**
+```python
+# arrow_engine/arrow_streaming.py
+import pyarrow as pa
+import pyarrow.compute as pc
+from typing import Iterator, Optional
+import asyncio
+
+class ArrowStreamProcessor:
+    def __init__(self, batch_size: int = 122_880):  # Optimal Arrow batch size
+        self.batch_size = batch_size
+        
+    async def stream_simulation_batches(self, 
+                                      parameters: pa.Table, 
+                                      iterations: int) -> Iterator[pa.RecordBatch]:
+        """
+        Stream simulation results in batches to prevent memory exhaustion
+        """
+        total_cells = len(parameters)
+        
+        for iteration_start in range(0, iterations, self.batch_size):
+            iteration_end = min(iteration_start + self.batch_size, iterations)
+            batch_iterations = iteration_end - iteration_start
+            
+            # Generate random values for this batch
+            batch_results = []
+            
+            for i in range(batch_iterations):
+                iteration_results = await self._simulate_iteration(
+                    parameters, iteration_start + i
+                )
+                batch_results.extend(iteration_results)
+            
+            # Convert to Arrow RecordBatch
+            yield pa.RecordBatch.from_pydict({
+                'iteration': [r['iteration'] for r in batch_results],
+                'cell_id': [r['cell_id'] for r in batch_results],
+                'value': [r['value'] for r in batch_results],
+                'timestamp': [pa.scalar(r['timestamp']) for r in batch_results]
+            }, schema=RESULTS_SCHEMA)
+    
+    async def _simulate_iteration(self, parameters: pa.Table, iteration: int) -> List[Dict]:
+        """
+        Run single Monte Carlo iteration using Arrow native operations
+        """
+        results = []
+        
+        # Use Arrow compute functions for vectorized operations
+        for i in range(len(parameters)):
+            param = parameters.slice(i, 1).to_pydict()
+            
+            if param['distribution_type'][0] == 'normal':
+                import numpy as np
+                value = np.random.normal(param['param1'][0], param['param2'][0])
+            elif param['distribution_type'][0] == 'uniform':
+                import numpy as np
+                value = np.random.uniform(param['param1'][0], param['param2'][0])
+            
+            results.append({
+                'iteration': iteration,
+                'cell_id': param['cell_id'][0],
+                'value': value,
+                'timestamp': pa.scalar('now', type=pa.timestamp('ms'))
+            })
+        
+        return results
+```
+
+## PHASE 3: ARROW NATIVE SIMULATION ENGINE (Weeks 5-7)
+
+### 3.1 High-Performance Monte Carlo Engine
+
+**Core Simulation Engine:**
+```python
+# arrow_engine/arrow_simulator.py
+import pyarrow as pa
+import pyarrow.compute as pc
+import numpy as np
+from concurrent.futures import ThreadPoolExecutor
+import asyncio
+from typing import AsyncIterator
+
+class ArrowMonteCarloEngine:
+    def __init__(self, max_workers: int = None):
+        self.max_workers = max_workers or min(32, (os.cpu_count() or 1) + 4)
+        self.executor = ThreadPoolExecutor(max_workers=self.max_workers)
+        
+    async def run_simulation_streaming(self, 
+                                     parameters: pa.Table, 
+                                     iterations: int,
+                                     batch_size: int = 10000) -> AsyncIterator[pa.Table]:
+        """
+        Run Monte Carlo simulation with streaming results
+        Yields intermediate results for real-time updates
+        """
+        
+        # Vectorized approach using Arrow compute functions
+        param_arrays = {
+            'distribution_type': parameters.column('distribution_type'),
+            'param1': parameters.column('param1'),
+            'param2': parameters.column('param2'),
+            'param3': parameters.column('param3'),
+            'cell_ids': parameters.column('cell_id')
+        }
+        
+        for batch_start in range(0, iterations, batch_size):
+            batch_end = min(batch_start + batch_size, iterations)
+            current_batch_size = batch_end - batch_start
+            
+            # Generate random numbers vectorized
+            batch_results = await self._simulate_batch_vectorized(
+                param_arrays, current_batch_size, batch_start
+            )
+            
+            yield batch_results
+    
+    async def _simulate_batch_vectorized(self, 
+                                       param_arrays: dict, 
+                                       batch_size: int,
+                                       batch_offset: int) -> pa.Table:
+        """
+        Vectorized batch simulation using Arrow compute kernels
+        """
+        num_params = len(param_arrays['cell_ids'])
+        
+        # Pre-allocate arrays
+        iterations = np.arange(batch_offset, batch_offset + batch_size)
+        cell_ids = np.repeat(param_arrays['cell_ids'].to_pylist(), batch_size)
+        values = np.zeros(num_params * batch_size)
+        
+        # Vectorized random number generation
+        normal_mask = pc.equal(param_arrays['distribution_type'], 'normal').to_pylist()
+        uniform_mask = pc.equal(param_arrays['distribution_type'], 'uniform').to_pylist()
+        
+        # Generate all random values at once
+        all_randoms = np.random.standard_normal(num_params * batch_size)
+        
+        # Apply transformations vectorized
+        for i, (is_normal, is_uniform) in enumerate(zip(normal_mask, uniform_mask)):
+            start_idx = i * batch_size
+            end_idx = start_idx + batch_size
+            
+            if is_normal:
+                mean = param_arrays['param1'][i].as_py()
+                std = param_arrays['param2'][i].as_py()
+                values[start_idx:end_idx] = all_randoms[start_idx:end_idx] * std + mean
+            elif is_uniform:
+                min_val = param_arrays['param1'][i].as_py()
+                max_val = param_arrays['param2'][i].as_py()
+                uniform_randoms = np.random.uniform(0, 1, batch_size)
+                values[start_idx:end_idx] = uniform_randoms * (max_val - min_val) + min_val
+        
+        # Create Arrow table
+        iteration_array = np.repeat(iterations, num_params)
+        
+        return pa.Table.from_arrays([
+            pa.array(iteration_array),
+            pa.array(cell_ids),
+            pa.array(values),
+            pa.array([pa.scalar('now', type=pa.timestamp('ms'))] * len(values))
+        ], schema=RESULTS_SCHEMA)
+```
+
+### 3.2 Real-Time Statistics Engine
+
+**Streaming Statistics Calculator:**
+```python
+# arrow_engine/arrow_stats.py
+import pyarrow as pa
+import pyarrow.compute as pc
+import numpy as np
+from typing import Dict, List
+
+class ArrowStatisticsEngine:
+    def __init__(self):
+        self.running_stats = {}
+        
+    def update_streaming_statistics(self, 
+                                  results_batch: pa.Table) -> pa.Table:
+        """
+        Update statistics incrementally as new results arrive
+        Enables real-time histogram and metrics updates
+        """
+        
+        # Group by cell_id for vectorized operations
+        grouped = results_batch.group_by('cell_id').aggregate([
+            ('value', 'mean'),
+            ('value', 'stddev'),
+            ('value', 'min'),
+            ('value', 'max'),
+            ('value', 'count')
+        ])
+        
+        # Calculate percentiles using Arrow compute
+        stats_data = []
+        
+        for cell_id in grouped.column('cell_id_by_key'):
+            cell_id_str = cell_id.as_py()
+            cell_values = results_batch.filter(
+                pc.equal(results_batch.column('cell_id'), cell_id)
+            ).column('value')
+            
+            # Calculate percentiles
+            percentiles = pc.quantile(cell_values, q=[0.05, 0.25, 0.5, 0.75, 0.95])
+            
+            # Calculate VaR and CVaR
+            var_95 = pc.quantile(cell_values, q=0.05).as_py()  # 5th percentile for losses
+            tail_values = cell_values.filter(pc.less(cell_values, var_95))
+            cvar_95 = pc.mean(tail_values).as_py() if len(tail_values) > 0 else var_95
+            
+            # Generate histogram
+            hist_bins, hist_counts = self._calculate_histogram_arrow(cell_values)
+            
+            stats_data.append({
+                'cell_id': cell_id_str,
+                'mean': pc.mean(cell_values).as_py(),
+                'std_dev': pc.stddev(cell_values).as_py(),
+                'min_value': pc.min(cell_values).as_py(),
+                'max_value': pc.max(cell_values).as_py(),
+                'percentile_5': percentiles[0].as_py(),
+                'percentile_25': percentiles[1].as_py(),
+                'percentile_50': percentiles[2].as_py(),
+                'percentile_75': percentiles[3].as_py(),
+                'percentile_95': percentiles[4].as_py(),
+                'var_95': var_95,
+                'cvar_95': cvar_95,
+                'histogram_bins': hist_bins,
+                'histogram_counts': hist_counts
+            })
+        
+        return pa.Table.from_pydict({
+            key: [d[key] for d in stats_data] 
+            for key in stats_data[0].keys()
+        }, schema=STATISTICS_SCHEMA)
+    
+    def _calculate_histogram_arrow(self, values: pa.Array, bins: int = 50) -> tuple:
+        """
+        Calculate histogram using Arrow native operations
+        """
+        min_val = pc.min(values).as_py()
+        max_val = pc.max(values).as_py()
+        
+        if min_val == max_val:
+            return [min_val, max_val], [len(values)]
+        
+        bin_edges = np.linspace(min_val, max_val, bins + 1)
+        
+        # Use Arrow compute for binning
+        bin_indices = []
+        for val in values.to_pylist():
+            bin_idx = np.digitize(val, bin_edges) - 1
+            bin_idx = max(0, min(bin_idx, bins - 1))
+            bin_indices.append(bin_idx)
+        
+        # Count values in each bin
+        counts = [0] * bins
+        for idx in bin_indices:
+            counts[idx] += 1
+        
+        return bin_edges.tolist(), counts
+```
+
+## PHASE 4: FRONTEND INTEGRATION (Weeks 8-9)
+
+### 4.1 Arrow-Native Visualization
+
+**JavaScript Arrow Integration:**
+```javascript
+// frontend/src/arrow-viz.js
+import { Table, RecordBatch } from 'apache-arrow';
+import * as Plot from '@observablehq/plot';
+
+class ArrowVisualization {
+    constructor() {
+        this.statisticsTable = null;
+        this.histogramCache = new Map();
+    }
+    
+    async loadStatisticsFromArrow(arrowBuffer) {
+        // Load Arrow data directly in browser
+        this.statisticsTable = Table.from(arrowBuffer);
+        return this.statisticsTable;
+    }
+    
+    renderHistogramArrowNative(cellId) {
+        // Find cell statistics
+        const cellStats = this.statisticsTable
+            .filter(d => d.cell_id === cellId)
+            .toArray()[0];
+        
+        if (!cellStats) return null;
+        
+        // Extract histogram data (already calculated server-side)
+        const bins = cellStats.histogram_bins;
+        const counts = cellStats.histogram_counts;
+        
+        // Create histogram data
+        const histogramData = bins.slice(0, -1).map((bin, i) => ({
+            x: bin,
+            x2: bins[i + 1],
+            y: counts[i]
+        }));
+        
+        // Render using Observable Plot (Arrow-optimized)
+        return Plot.plot({
+            marks: [
+                Plot.rectY(histogramData, {
+                    x1: "x",
+                    x2: "x2", 
+                    y: "y",
+                    fill: "steelblue"
+                }),
+                Plot.ruleY([0])
+            ],
+            x: { label: "Value" },
+            y: { label: "Frequency" }
+        });
+    }
+    
+    async streamResults(websocketUrl) {
+        // Real-time streaming of Arrow results
+        const ws = new WebSocket(websocketUrl);
+        
+        ws.onmessage = async (event) => {
+            const arrowBuffer = await event.data.arrayBuffer();
+            const newBatch = RecordBatch.from(arrowBuffer);
+            
+            // Update visualizations in real-time
+            this.updateVisualizationsStreaming(newBatch);
+        };
+    }
+    
+    updateVisualizationsStreaming(newBatch) {
+        // Incrementally update charts without full re-render
+        // This enables real-time Monte Carlo progress visualization
+        
+        newBatch.toArray().forEach(row => {
+            const cellId = row.cell_id;
+            
+            // Update live statistics
+            this.updateLiveStatistics(cellId, row);
+            
+            // Update histogram if visible
+            if (this.isHistogramVisible(cellId)) {
+                this.updateHistogramIncremental(cellId, row);
+            }
+        });
+    }
+}
+```
+
+### 4.2 Real-Time Dashboard Updates
+
+**Streaming Results Component:**
+```javascript
+// frontend/src/components/StreamingResults.jsx
+import React, { useState, useEffect, useRef } from 'react';
+import { Table } from 'apache-arrow';
+
+const StreamingMonteCarloResults = ({ simulationId }) => {
+    const [statistics, setStatistics] = useState(null);
+    const [isStreaming, setIsStreaming] = useState(false);
+    const arrowViz = useRef(new ArrowVisualization());
+    
+    useEffect(() => {
+        const startStreaming = async () => {
+            setIsStreaming(true);
+            
+            // Connect to Arrow streaming endpoint
+            const response = await fetch(`/api/simulation/${simulationId}/stream-arrow`);
+            const reader = response.body.getReader();
+            
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                
+                // Process Arrow RecordBatch directly
+                const batch = RecordBatch.from(value);
+                const newStats = await arrowViz.current.processStreamingBatch(batch);
+                
+                setStatistics(newStats);
+            }
+            
+            setIsStreaming(false);
+        };
+        
+        startStreaming();
+    }, [simulationId]);
+    
+    return (
+        <div className="streaming-results">
+            <div className="status">
+                {isStreaming ? "Simulation Running..." : "Complete"}
+            </div>
+            
+            {statistics && (
+                <div className="results-grid">
+                    {statistics.toArray().map(stat => (
+                        <div key={stat.cell_id} className="cell-result">
+                            <h4>{stat.cell_id}</h4>
+                            <div className="metrics">
+                                <span>Mean: {stat.mean.toFixed(4)}</span>
+                                <span>Std Dev: {stat.std_dev.toFixed(4)}</span>
+                                <span>VaR 95%: {stat.var_95.toFixed(4)}</span>
+                            </div>
+                            <div 
+                                ref={el => {
+                                    if (el) {
+                                        const chart = arrowViz.current.renderHistogramArrowNative(stat.cell_id);
+                                        el.appendChild(chart);
+                                    }
+                                }}
+                                className="histogram"
+                            />
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+```
+
+## PHASE 5: API INTEGRATION (Weeks 10-11)
+
+### 5.1 Arrow-Native API Endpoints
+
+**FastAPI with Arrow Support:**
+```python
+# backend/api/arrow_endpoints.py
+from fastapi import FastAPI, WebSocket, File, UploadFile
+from fastapi.responses import StreamingResponse
+import pyarrow as pa
+import pyarrow.ipc as ipc
+from arrow_engine import ArrowMonteCarloEngine, ArrowExcelLoader
+import asyncio
+
+app = FastAPI()
+engine = ArrowMonteCarloEngine()
+loader = ArrowExcelLoader()
+
+@app.post("/api/simulation/upload-excel-arrow")
+async def upload_excel_arrow(file: UploadFile = File(...)):
+    """
+    Upload Excel file and convert to Arrow format
+    Returns Arrow schema information
+    """
+    # Save uploaded file
+    file_path = f"uploads/{file.filename}"
+    with open(file_path, "wb") as buffer:
+        buffer.write(await file.read())
+    
+    # Convert to Arrow
+    parameters_table = loader.load_excel_to_arrow(file_path)
+    
+    # Return schema info and parameter count
+    return {
+        "status": "success",
+        "parameters_count": len(parameters_table),
+        "schema": parameters_table.schema.to_string(),
+        "estimated_memory_mb": parameters_table.nbytes / 1024 / 1024
+    }
+
+@app.websocket("/api/simulation/{simulation_id}/stream-arrow")
+async def stream_simulation_arrow(websocket: WebSocket, simulation_id: str):
+    """
+    Stream Monte Carlo results in Arrow format for real-time updates
+    """
+    await websocket.accept()
+    
+    try:
+        # Load parameters (from previous upload)
+        parameters = load_parameters_for_simulation(simulation_id)
+        iterations = 100000  # Or from request
+        
+        # Stream results
+        async for batch in engine.run_simulation_streaming(parameters, iterations):
+            # Serialize Arrow batch to bytes
+            sink = pa.BufferOutputStream()
+            writer = ipc.new_stream(sink, batch.schema)
+            writer.write_batch(batch)
+            writer.close()
+            
+            # Send to frontend
+            await websocket.send_bytes(sink.getvalue().to_pybytes())
+            
+    except Exception as e:
+        await websocket.send_json({"error": str(e)})
+    finally:
+        await websocket.close()
+
+@app.get("/api/simulation/{simulation_id}/export-arrow")
+async def export_results_arrow(simulation_id: str):
+    """
+    Export complete results as Arrow/Parquet file
+    """
+    results_table = load_results_for_simulation(simulation_id)
+    
+    # Convert to Parquet for download
+    def generate_parquet():
+        sink = pa.BufferOutputStream()
+        with pa.parquet.ParquetWriter(sink, results_table.schema) as writer:
+            writer.write_table(results_table)
+        yield sink.getvalue().to_pybytes()
+    
+    return StreamingResponse(
+        generate_parquet(),
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f"attachment; filename=results_{simulation_id}.parquet"}
+    )
+```
+
+### 5.2 Performance Monitoring
+
+**Arrow Performance Metrics:**
+```python
+# backend/monitoring/arrow_metrics.py
+import time
+import psutil
+import pyarrow as pa
+from dataclasses import dataclass
+from typing import Dict
+
+@dataclass
+class ArrowPerformanceMetrics:
+    total_rows_processed: int
+    processing_time_seconds: float
+    memory_usage_mb: float
+    rows_per_second: float
+    memory_efficiency_ratio: float  # rows/MB
+
+class ArrowPerformanceMonitor:
+    def __init__(self):
+        self.start_time = None
+        self.start_memory = None
+        
+    def start_monitoring(self):
+        self.start_time = time.time()
+        self.start_memory = psutil.Process().memory_info().rss / 1024 / 1024
+        
+    def get_metrics(self, rows_processed: int) -> ArrowPerformanceMetrics:
+        end_time = time.time()
+        end_memory = psutil.Process().memory_info().rss / 1024 / 1024
+        
+        processing_time = end_time - self.start_time
+        memory_used = end_memory - self.start_memory
+        
+        return ArrowPerformanceMetrics(
+            total_rows_processed=rows_processed,
+            processing_time_seconds=processing_time,
+            memory_usage_mb=memory_used,
+            rows_per_second=rows_processed / processing_time,
+            memory_efficiency_ratio=rows_processed / max(memory_used, 1)
+        )
+```
+
+## PHASE 6: TESTING & OPTIMIZATION (Weeks 12-13)
+
+### 6.1 Performance Benchmarks
+
+**Benchmark Suite:**
+```python
+# tests/benchmark_arrow.py
+import pytest
+import pyarrow as pa
+import numpy as np
+import time
+from arrow_engine import ArrowMonteCarloEngine
+import pandas as pd
+
+class TestArrowPerformance:
+    
+    def test_large_file_processing(self):
+        """
+        Test processing files that currently crash the system
+        Target: 500MB Excel files with 50K+ formulas
+        """
+        # Generate test data simulating large Excel file
+        num_cells = 50000
+        parameters = self._generate_test_parameters(num_cells)
+        
+        engine = ArrowMonteCarloEngine()
+        
+        start_time = time.time()
+        start_memory = psutil.Process().memory_info().rss
+        
+        # Run simulation that would previously crash
+        results = []
+        async for batch in engine.run_simulation_streaming(parameters, 10000):
+            results.append(batch)
+        
+        end_time = time.time()
+        end_memory = psutil.Process().memory_info().rss
+        
+        # Performance assertions
+        processing_time = end_time - start_time
+        memory_used = (end_memory - start_memory) / 1024 / 1024  # MB
+        
+        assert processing_time < 300  # Should complete in under 5 minutes
+        assert memory_used < 8000    # Should use less than 8GB RAM
+        assert len(results) > 0      # Should not return empty/zeros
+        
+        print(f"Processed {num_cells} parameters in {processing_time:.2f}s using {memory_used:.2f}MB")
+    
+    def test_streaming_performance(self):
+        """
+        Test real-time streaming capability
+        Target: Results available within seconds of starting
+        """
+        parameters = self._generate_test_parameters(1000)
+        engine = ArrowMonteCarloEngine()
+        
+        first_batch_time = None
+        start_time = time.time()
+        
+        batch_count = 0
+        async for batch in engine.run_simulation_streaming(parameters, 50000, batch_size=5000):
+            if first_batch_time is None:
+                first_batch_time = time.time() - start_time
+            
+            batch_count += 1
+            if batch_count >= 3:  # Test first few batches
+                break
+        
+        # First results should be available quickly
+        assert first_batch_time < 10  # First batch within 10 seconds
+        assert batch_count >= 3       # Multiple batches processed
+        
+    def test_memory_efficiency(self):
+        """
+        Compare Arrow native vs traditional processing
+        Target: 60-80% memory reduction
+        """
+        # Traditional approach simulation
+        traditional_memory = self._simulate_traditional_approach()
+        
+        # Arrow native approach
+        parameters = self._generate_test_parameters(10000)
+        
+        start_memory = psutil.Process().memory_info().rss
+        engine = ArrowMonteCarloEngine()
+        
+        # Process with Arrow
+        results = []
+        async for batch in engine.run_simulation_streaming(parameters, 20000):
+            results.append(batch)
+        
+        arrow_memory = psutil.Process().memory_info().rss - start_memory
+        
+        # Memory efficiency check
+        memory_reduction = (traditional_memory - arrow_memory) / traditional_memory
+        assert memory_reduction > 0.6  # At least 60% memory reduction
+        
+        print(f"Memory reduction: {memory_reduction:.1%}")
+    
+    def _generate_test_parameters(self, num_cells: int) -> pa.Table:
+        """Generate test parameters table"""
+        return pa.Table.from_pydict({
+            'cell_id': [f"A{i}" for i in range(num_cells)],
+            'formula': [f"=NORM.INV(RAND(),{i},{i*0.1})" for i in range(num_cells)],
+            'distribution_type': ['normal'] * num_cells,
+            'param1': np.random.normal(100, 20, num_cells).tolist(),
+            'param2': np.random.uniform(1, 10, num_cells).tolist(),
+            'param3': [0.0] * num_cells,
+            'correlation_group': [''] * num_cells,
+            'dependencies': [[] for _ in range(num_cells)]
+        })
+```
+
+### 6.2 Integration Testing
+
+**End-to-End Testing:**
+```python
+# tests/test_integration_arrow.py
+import pytest
+import asyncio
+from fastapi.testclient import TestClient
+from api.arrow_endpoints import app
+
+class TestArrowIntegration:
+    
+    def test_full_workflow(self):
+        """
+        Test complete workflow: Upload → Process → Stream → Export
+        """
+        client = TestClient(app)
+        
+        # 1. Upload Excel file
+        with open("test_files/large_model.xlsx", "rb") as f:
+            response = client.post("/api/simulation/upload-excel-arrow", 
+                                 files={"file": f})
+        
+        assert response.status_code == 200
+        upload_result = response.json()
+        assert upload_result["parameters_count"] > 0
+        
+        # 2. Start streaming simulation
+        simulation_id = "test_simulation_123"
+        
+        # 3. Test WebSocket streaming (mock)
+        # This would test the real-time streaming capability
+        
+        # 4. Export results
+        response = client.get(f"/api/simulation/{simulation_id}/export-arrow")
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "application/octet-stream"
+    
+    def test_error_handling(self):
+        """
+        Test graceful handling of problematic files
+        """
+        client = TestClient(app)
+        
+        # Test with corrupted Excel file
+        with open("test_files/corrupted.xlsx", "rb") as f:
+            response = client.post("/api/simulation/upload-excel-arrow", 
+                                 files={"file": f})
+        
+        # Should handle gracefully, not crash
+        assert response.status_code in [400, 422]  # Client error, not server error
+```
+
+## PHASE 7: DEPLOYMENT & MONITORING (Week 14)
+
+### 7.1 Production Configuration
+
+**Docker Configuration:**
+```dockerfile
+# Dockerfile.arrow
+FROM python:3.11-slim
+
+# Install Arrow native dependencies
+RUN apt-get update && apt-get install -y \
+    libarrow-dev \
+    libparquet-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements-arrow.txt .
+RUN pip install --no-cache-dir -r requirements-arrow.txt
+
+# Optimize for Arrow processing
+ENV ARROW_DEFAULT_MEMORY_POOL=system
+ENV ARROW_IO_THREADS=8
+
+COPY backend/ /app/
+WORKDIR /app
+
+CMD ["uvicorn", "api.arrow_endpoints:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+### 7.2 Performance Monitoring Dashboard
+
+**Monitoring Configuration:**
+```python
+# monitoring/dashboard.py
+from prometheus_client import Counter, Histogram, Gauge
+import pyarrow as pa
+
+# Metrics
+SIMULATION_COUNTER = Counter('monte_carlo_simulations_total', 'Total simulations run')
+PROCESSING_TIME = Histogram('monte_carlo_processing_seconds', 'Simulation processing time')
+MEMORY_USAGE = Gauge('monte_carlo_memory_bytes', 'Current memory usage')
+ARROW_BATCH_SIZE = Histogram('arrow_batch_size_rows', 'Arrow batch sizes processed')
+
+class ArrowMetricsCollector:
+    def record_simulation(self, parameters_count: int, processing_time: float):
+        SIMULATION_COUNTER.inc()
+        PROCESSING_TIME.observe(processing_time)
+        
+    def record_memory_usage(self, bytes_used: int):
+        MEMORY_USAGE.set(bytes_used)
+        
+    def record_batch_processing(self, batch: pa.RecordBatch):
+        ARROW_BATCH_SIZE.observe(len(batch))
+```
+
+## EXPECTED RESULTS
+
+### Performance Improvements:
+- **Large File Processing**: 500MB+ Excel files (currently crash) → Process successfully
+- **Speed**: 10-100x faster than current implementation
+- **Memory**: 60-80% reduction in memory usage
+- **Real-time**: Live histogram updates during simulation
+- **Scalability**: Handle 1M+ simulations without issues
+
+### Bug Fixes:
+- ✅ Eliminates "zeros" bug with large files
+- ✅ Prevents memory exhaustion crashes  
+- ✅ Fixes single-column histogram issue
+- ✅ Enables proper parameter variation
+
+### New Capabilities:
+- **Streaming Results**: See results as simulation runs
+- **Real-time Statistics**: Live VaR, CVaR, percentiles
+- **Export Formats**: Native Parquet/Arrow export
+- **API Integration**: RESTful and WebSocket APIs
+- **Browser Performance**: Arrow-native frontend processing
+
+## MIGRATION STRATEGY
+
+### Week 1-2: Setup parallel Arrow system alongside existing
+### Week 3-8: Implement core functionality with extensive testing
+### Week 9-11: Frontend integration and API development
+### Week 12-13: Performance tuning and optimization
+### Week 14: Production deployment with rollback capability
+
+This upgrade will transform your Monte Carlo platform from having large file limitations to being able to handle enterprise-scale risk models with real-time performance that rivals commercial tools like Crystal Ball Enterprise.

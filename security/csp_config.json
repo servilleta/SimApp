@@ -1,0 +1,44 @@
+{
+  "default-src": [
+    "'self'"
+  ],
+  "script-src": [
+    "'self'",
+    "'strict-dynamic'",
+    "'nonce-{random}'"
+  ],
+  "style-src": [
+    "'self'",
+    "'unsafe-hashes'",
+    "https://fonts.googleapis.com"
+  ],
+  "font-src": [
+    "'self'",
+    "https://fonts.gstatic.com"
+  ],
+  "img-src": [
+    "'self'",
+    "data:",
+    "https:"
+  ],
+  "connect-src": [
+    "'self'",
+    "https://api.stripe.com"
+  ],
+  "frame-src": [
+    "'none'"
+  ],
+  "frame-ancestors": [
+    "'none'"
+  ],
+  "object-src": [
+    "'none'"
+  ],
+  "base-uri": [
+    "'self'"
+  ],
+  "form-action": [
+    "'self'"
+  ],
+  "upgrade-insecure-requests": true
+}

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Auth0 Session</title>
+</head>
+<body>
+    <h2>🔄 Clearing Auth0 Session...</h2>
+    <p>Please wait while we clear your session...</p>
+    
+    <script>
+        console.log('🧹 Starting complete Auth0 session cleanup...');
+        
+        // Clear all localStorage
+        localStorage.clear();
+        console.log('✅ localStorage cleared');
+        
+        // Clear all sessionStorage
+        sessionStorage.clear();
+        console.log('✅ sessionStorage cleared');
+        
+        // Clear all cookies for localhost
+        document.cookie.split(";").forEach(function(c) { 
+            document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+        });
+        console.log('✅ Cookies cleared');
+        
+        // Force Auth0 logout
+        setTimeout(() => {
+            console.log('🔄 Redirecting to clear Auth0 session...');
+            window.location.href = 'http://localhost:9090';
+        }, 2000);
+    </script>
+</body>
+</html>

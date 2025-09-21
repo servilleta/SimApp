@@ -1,0 +1,8 @@
+Defaulting to user installation because normal site-packages is not writeable
+Collecting stripe
+  Downloading stripe-12.2.0-py2.py3-none-any.whl (1.6 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.6/1.6 MB 19.0 MB/s eta 0:00:00
+Requirement already satisfied: requests>=2.20 in /usr/lib/python3/dist-packages (from stripe) (2.25.1)
+Requirement already satisfied: typing_extensions>=4.5.0 in /home/paperspace/.local/lib/python3.10/site-packages (from stripe) (4.14.0)
+Installing collected packages: stripe
+Successfully installed stripe-12.2.0

@@ -1,0 +1,129 @@
+# NEW STALL-BUG ELIMINATION PLAN (Grok Edition v1.0 – Aug 2025)
+
+This plan is a detailed, programmer-ready blueprint for implementing alternative progress monitoring methods in the Monte Carlo simulation platform. It builds on a re-analysis of STALLBUG.txt, STALPLAN.txt, newstallplan.txt, and the codebase. The focus is on the Ultra engine and generic Excel models—no hard-coding for specific files. It incorporates incremental improvements and radical shifts to address chronic stalling issues (e.g., 50-60% freezes).
+
+Key Goals:
+- Eliminate real-time WebSocket dependencies where possible to reduce complexity and failures.
+- Ensure reliable, non-stalling progress feedback.
+- Adhere to user rules: No silent simplifications, placeholders, or fallbacks without consultation; reflect on full Docker rebuilds before testing.
+
+Total Estimated Effort: 5-7 developer-days (phased for parallel work).
+
+----------------------------------------------------------------------
+
+A. HIGH-LEVEL FINDINGS FROM ANALYSIS
+----------------------------------------------------------------------
+
+1. **Current System Issues**: WebSockets cause timing races, reconnections, and duplications (e.g., Phase 22 spam). Batch monitoring is fragile for large Excel files. GPU validation often fails silently, leading to false completions with 0 iterations.
+2. **Opportunities**: Existing polling fallbacks (e.g., in enhancedWebSocketService.js) and batch handling (service.py) can be leveraged. Radical simplifications like polling-only or chunked batches could resolve 90% of stalls.
+3. **Alternatives Explored**:
+   - Incremental: Strengthen polling as primary.
+   - Radical 1: Polling-only (no WebSockets).
+   - Radical 2: Batch-progressive simulations (chunk large runs).
+   - Radical 3: Offline/async with notifications (fire-and-forget).
+
+This plan implements a hybrid: Start with polling-only (Radical 1) as the base, add batch chunking (Radical 2) for Ultra engine reliability, and include optional notifications (Radical 3) for long runs.
+
+----------------------------------------------------------------------
+
+B. GUIDING PRINCIPLES
+----------------------------------------------------------------------
+
+1. **Simplicity Over Complexity**: Prioritize polling for reliability; avoid WebSocket unless proven necessary.
+2. **Generality**: All changes must work for any Excel model/Ultra engine simulation—no file-specific code.
+3. **Fail Fast & Loud**: Throw errors for failures (e.g., GPU issues); no false completions.
+4. **Test-Driven**: Add Pytest/Cypress for every phase; CI must pass before merges.
+5. **User Rules Compliance**: No silent placeholders/fallbacks—log and notify users. Rebuild Docker fully before testing.
+6. **Modularity**: Implement as feature flags (e.g., enable_polling_only) for easy rollback.
+
+----------------------------------------------------------------------
+
+C. FILE MAP (BY CONCERN)
+----------------------------------------------------------------------
+
+Backend – Progress & Engine Changes:
+  • backend/simulation/service.py                        ← Polling endpoint enhancements, batch chunking logic
+  • backend/simulation/engines/ultra_engine.py           ← Chunking for progressive execution, GPU fallback
+  • backend/simulation/progress_queue.py                 ← Simplify for polling (remove WebSocket-specific queuing)
+  • backend/simulation/router.py                         ← Enhance /progress endpoint for aggregated status
+  • backend/tests/integration/test_progress.py           ← NEW: Smoke tests for polling and chunking
+
+Frontend – UI & Polling:
+  • frontend/src/store/simulationSlice.js                ← Handle chunked progress, Redux state for polling
+  • frontend/src/services/progressManager.js             ← Core polling logic (expand existing)
+  • frontend/src/components/simulation/UnifiedProgressTracker.jsx ← Adapt for polling-based updates, batch display
+  • frontend/src/hooks/useSimulationPoller.ts            ← Enhance for configurable intervals/backoff
+  • cypress/e2e/progress.spec.js                         ← NEW: E2E tests for polling UX
+
+Infrastructure / CI:
+  • docker-compose.yml / Dockerfile                      ← Add deps for notifications (e.g., email lib)
+  • .github/workflows/ci.yml                             ← NEW pipeline with progress verification tests
+
+----------------------------------------------------------------------
+
+D. EXECUTION PHASES
+----------------------------------------------------------------------
+
+PHASE 0: Clean Baseline & Smoke Tests (0.5 day)
+0.1: git clone fresh repo; docker compose build --no-cache && up.
+0.2: Add Pytest smoke test: Upload small Excel, run Ultra simulation, poll /progress, assert iterations >0 and progress reaches 100%.
+0.3: Add Cypress test: Simulate run, verify no stall in UI.
+0.4: Run tests—confirm current bug reproduction (stall at 50-60%).
+
+PHASE 1: Implement Polling-Only Progress (1 day) – Radical 1 Base
+1.1: Backend – Enhance /progress endpoint (router.py) to return aggregated batch status, iterations, and ETA (based on average batch time).
+1.2: Frontend – In simulationSlice.js, on simulation start: Start polling via useSimulationPoller.ts (every 2s initially, backoff to 5s).
+1.3: Remove all WebSocket code (e.g., from websocketService.js and UnifiedProgressTracker.jsx) behind a feature flag.
+1.4: Add interpolation in progressManager.js for smooth UI updates between polls.
+1.5: Tests: Pytest for endpoint; Cypress for polling UX (assert updates every ~2s, no stalls).
+
+PHASE 2: Add Batch-Progressive Chunking (1.5 days) – Radical 2
+2.1: Backend – In ultra_engine.py's _execute_optimized_simulation, split iterations into chunks (e.g., 100 each, configurable).
+2.2: For each chunk: Run, store partial results in Redis, update progress (e.g., "Chunk 3/10: 45%").
+2.3: In service.py's monitor_batch_simulation, aggregate chunk progresses for parent.
+2.4: Handle interruptions: Save chunk state for resume.
+2.5: Frontend – Adapt UnifiedProgressTracker.jsx to show multi-level bars (overall + current chunk).
+2.6: Tests: Pytest for chunk execution (assert partial results); Cypress for UI (multi-bar display).
+
+PHASE 3: Offline/Async Notifications (1 day) – Radical 3
+3.1: Backend – On milestones (e.g., 25%, 50%, complete), trigger notifications via email/SMS (add lib like smtplib or Twilio).
+3.2: In service.py, add callback hooks for milestones.
+3.3: Frontend – Dashboard polls for high-level status (e.g., every 30s); show "Running - Check email for updates".
+3.4: Feature Flag: Enable for long simulations (>10min estimated).
+3.5: Tests: Mock notifications; Cypress for dashboard UX.
+
+PHASE 4: Integration & Hardening (0.5 day)
+4.1: Combine all: Polling drives UI, chunking ensures granularity, notifications for offline.
+4.2: Add flags in .env (e.g., ENABLE_POLLING_ONLY=true).
+4.3: Full Docker rebuild; test with large Excel (multi-target, 1000+ iterations).
+4.4: Handle GPU failures: In ultra_engine.py, fallback to CPU chunks on validation fail (consult you if needed).
+
+PHASE 5: CI & Prevention (0.5 day)
+5.1: GitHub Actions: Run Pytest/Cypress on PRs; assert no stalls, real iterations.
+5.2: Monitoring: Add /metrics for progress health (e.g., stalled simulations alert).
+
+----------------------------------------------------------------------
+
+E. SUCCESS CRITERIA
+----------------------------------------------------------------------
+
+• **No Stalls**: Progress updates every 1-5s; UI shows continuous movement.
+• **Generality**: Works for any Excel size/engine; tests pass with varied inputs.
+• **Reliability**: GPU failures fallback gracefully; no false completions.
+• **UX**: Users see reliable feedback (e.g., "Chunk 2/10: 30%"); notifications for long runs.
+• **Tests**: 100% coverage for new paths; CI green.
+
+----------------------------------------------------------------------
+
+F. RISK & MITIGATION
+----------------------------------------------------------------------
+
+Risk | Mitigation
+-----|-----------
+Polling overhead | Adaptive intervals (faster during active runs).
+Chunking performance | Configurable chunk size; benchmark vs. baseline.
+Notification spam | Milestone-only (25/50/75/100%); user opt-in.
+
+Before proceeding with implementation, confirm if you'd like to prioritize one radical method or adjust details.
+
+— End Plan — 

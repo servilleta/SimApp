@@ -1,0 +1,10 @@
+# Monte Carlo Simulation Platform - Environment Variables
+# Copy this to .env in your project root and add your actual values
+
+# Stripe Webhook Secret - CRITICAL FOR SUBSCRIPTION SYNC
+# Get this from: Stripe Dashboard → Developers → Webhooks → Your Webhook → Signing Secret
+# Format: whsec_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret_here
+
+# Example: 
+# STRIPE_WEBHOOK_SECRET=whsec_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef

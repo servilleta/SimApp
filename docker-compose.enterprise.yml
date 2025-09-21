@@ -1,0 +1,249 @@
+# 🚀 ENTERPRISE MONTE CARLO PLATFORM
+# Phase 3 Week 9-10: Load Balancing & Auto-Scaling
+# 
+# This configuration provides:
+# - Load-balanced simulation services (3 replicas)
+# - Redis cluster for high availability caching
+# - PostgreSQL with connection pooling
+# - Nginx load balancer with session affinity
+# - Monitoring and metrics collection
+#
+# CRITICAL: Preserves Ultra engine and progress bar functionality
+# while adding enterprise-grade scalability and performance.
+
+version: '3.8'
+
+services:
+  # Nginx Load Balancer
+  nginx-lb:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - simulation-service-1
+      - simulation-service-2
+      - simulation-service-3
+    networks:
+      - enterprise-network
+    restart: unless-stopped
+    
+  # Simulation Service Replicas (Ultra Engine)
+  simulation-service-1:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - ENVIRONMENT=production
+      - REDIS_URL=redis://redis-cluster:6379
+      - DATABASE_URL=postgresql://enterprise_user:enterprise_password@postgres:5432/enterprise_db
+      - INSTANCE_ID=simulation-service-1
+      - MAX_CONCURRENT_SIMULATIONS=10
+      - ULTRA_ENGINE_MODE=enterprise
+      - ENABLE_METRICS=true
+    volumes:
+      - simulation-storage-1:/app/enterprise-storage
+    networks:
+      - enterprise-network
+    depends_on:
+      - postgres
+      - redis-cluster
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    
+  simulation-service-2:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - ENVIRONMENT=production
+      - REDIS_URL=redis://redis-cluster:6379
+      - DATABASE_URL=postgresql://enterprise_user:enterprise_password@postgres:5432/enterprise_db
+      - INSTANCE_ID=simulation-service-2
+      - MAX_CONCURRENT_SIMULATIONS=10
+      - ULTRA_ENGINE_MODE=enterprise
+      - ENABLE_METRICS=true
+    volumes:
+      - simulation-storage-2:/app/enterprise-storage
+    networks:
+      - enterprise-network
+    depends_on:
+      - postgres
+      - redis-cluster
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    
+  simulation-service-3:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - ENVIRONMENT=production
+      - REDIS_URL=redis://redis-cluster:6379
+      - DATABASE_URL=postgresql://enterprise_user:enterprise_password@postgres:5432/enterprise_db
+      - INSTANCE_ID=simulation-service-3
+      - MAX_CONCURRENT_SIMULATIONS=10
+      - ULTRA_ENGINE_MODE=enterprise
+      - ENABLE_METRICS=true
+    volumes:
+      - simulation-storage-3:/app/enterprise-storage
+    networks:
+      - enterprise-network
+    depends_on:
+      - postgres
+      - redis-cluster
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+  
+  # Redis Cluster for High Availability Caching
+  redis-cluster:
+    image: redis/redis-stack-server:latest
+    command: >
+      redis-server 
+      --cluster-enabled yes 
+      --cluster-config-file nodes.conf 
+      --cluster-node-timeout 5000 
+      --appendonly yes
+      --requirepass RedisClusterPassword123
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-cluster-data:/data
+    networks:
+      - enterprise-network
+    restart: unless-stopped
+    
+  # PostgreSQL with Enterprise Configuration
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=enterprise_db
+      - POSTGRES_USER=enterprise_user
+      - POSTGRES_PASSWORD=enterprise_password
+      - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - enterprise-network
+    restart: unless-stopped
+    command: >
+      postgres
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=4MB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+  
+  # Frontend with Load Balancer Support
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      - REACT_APP_API_URL=http://nginx-lb
+      - REACT_APP_WS_URL=ws://nginx-lb
+      - NODE_ENV=production
+    ports:
+      - "3000:3000"
+    networks:
+      - enterprise-network
+    depends_on:
+      - nginx-lb
+    restart: unless-stopped
+  
+  # Prometheus for Metrics Collection
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+    networks:
+      - enterprise-network
+    restart: unless-stopped
+  
+  # Grafana for Visualization
+  grafana:
+    image: grafana/grafana-enterprise:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_DOMAIN=localhost
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - enterprise-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+networks:
+  enterprise-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  # Simulation storage (one per service instance)
+  simulation-storage-1:
+    driver: local
+  simulation-storage-2:
+    driver: local
+  simulation-storage-3:
+    driver: local
+    
+  # Database and cache storage
+  postgres-data:
+    driver: local
+  redis-cluster-data:
+    driver: local
+    
+  # Monitoring storage
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
