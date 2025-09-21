@@ -13,7 +13,7 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
-      - VITE_API_URL=http://64.71.146.187:9090/api
+      - VITE_API_URL=http://localhost:9090/api
     networks:
       - app-network
 
