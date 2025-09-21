@@ -1,0 +1,210 @@
+# Monte Carlo Simulation Feature: Implementation Status and Next Steps
+
+## 1. Feature Goal
+
+To enable users of the Monte Carlo Simulation Web Platform to:
+- Upload Excel files.
+- Define specific cells within the Excel file as input variables, configuring them with triangular probability distributions (min, most likely, max values).
+- Designate a specific cell as the output/result cell, whose formula will be evaluated.
+- Run a Monte Carlo simulation where the input variables are sampled according to their distributions over a specified number of iterations.
+- View statistical results and visualizations (e.g., histogram, percentiles) for the output cell based on the simulation.
+
+## 2. Backend Implementation & Key Logic
+
+### 2.1. Excel File Parsing (`backend/excel_parser/`)
+- **Status:** MODIFIED / ENHANCED
+- **`POST /api/excel-parser/upload`:**
+    - Accepts an Excel file (`.xlsx`, `.xls`).
+    - Saves the uploaded file to `settings.UPLOAD_DIR` with a unique `file_id`.
+    - **Parses all sheets using `openpyxl` to extract full grid data.**
+        - For each cell, it determines its value (result of formula if any), the formula string itself (if it's a formula cell), its coordinate, and `is_formula_cell` status.
+        - Stores this as `CellData` objects within a `grid_data` (list of lists of `CellData`) for each `SheetData`.
+    - Stores all extracted formulas (for all sheets) in a `{file_id}_formulas.json` file. The structure is `{sheet_name: {coordinate: formula}}`.
+    - **Returns `ExcelFileResponse` containing `file_id`, `filename`, and `sheets: List[SheetData]`.**
+        - `SheetData` includes `sheet_name` and the detailed `grid_data`. This response is used by the frontend to display the interactive grid.
+- **`GET /api/excel-parser/files/{file_id}/info`:**
+    - **Status:** MODIFIED
+    - Returns basic metadata: `file_id`, `filename`, `status: "parsed"`, and `available_sheets` (derived from the keys in the `{file_id}_formulas.json`).
+- **`GET /api/excel-parser/files/{file_id}/variables` (NEEDS REVIEW/ENHANCEMENT):**
+    - **Status:** MODIFIED (Basic Implementation)
+    - Currently, attempts to return column headers from the first sheet (or a specified sheet) by re-reading the original Excel file.
+    - **Future:** This might need to be more sophisticated for suggesting simulation input variables (e.g., named ranges, cells with numeric data).
+- **`GET /api/excel-parser/files/{file_id}/formulas/{sheet_name}/{cell_coordinate}`:**
+    - **Status:** MODIFIED
+    - Retrieves a specific formula string for the given `file_id`, `sheet_name`, and `cell_coordinate` from the stored `{file_id}_formulas.json`. Used by the simulation service.
+
+### 2.2. Simulation Schemas (`backend/simulation/schemas.py`)
+- **Status:** COMPLETED
+- `VariableConfig`: Defines input variable (name/coordinate, `sheet_name`, min, most_likely, max).
+- `SimulationRequest`: `file_id`, `result_cell_coordinate`, `result_cell_sheet_name`, `variables: List[VariableConfig]`, `iterations`. `simulation_id` is auto-generated.
+- `SimulationResult`: Statistics (mean, median, std_dev, etc.), percentiles, histogram data.
+- `SimulationResponse`: `simulation_id`, `status` ('pending', 'running', 'completed', 'failed'), `message`, optional `results: SimulationResult`, `created_at`, `updated_at`.
+
+### 2.3. Simulation Engine (`backend/simulation/engine.py`)
+- **Status:** COMPLETED (Core Logic)
+- `MonteCarloSimulation` class:
+    - Takes iterations.
+    - `run_simulation` method takes `variables` config, `formula_to_evaluate`, `use_gpu` flag.
+    - `_generate_triangular_samples`: Uses `numpy.random.triangular`.
+    - `_safe_excel_eval`: Evaluates the formula string using a restricted Python `eval()` with `numpy` functions and input variables. **Handles only formulas parsable by this restricted eval.**
+    - `_run_simulation_sync_cpu`: Synchronous CPU-bound simulation loop.
+    - `_run_simulation_gpu`: Placeholder for GPU execution (uses `cupy`), depends on `gpu_manager`. Evaluation still CPU-bound.
+    - `_calculate_statistics`: Calculates descriptive statistics and basic histogram data.
+- **Key Limitation:** The `_safe_excel_eval` is a simple Python `eval()` and does NOT support the full range of Excel functions or complex cell dependencies. It relies on a single formula string for the result cell, with input variables directly substituted.
+
+### 2.4. Simulation Service (`backend/simulation/service.py`)
+- **Status:** COMPLETED (Async Task Orchestration)
+- `SIMULATION_RESULTS_STORE`: In-memory dictionary to store simulation status and results by `simulation_id`.
+- `initiate_simulation(request, background_tasks)`:
+    - Validates request.
+    - Stores initial 'pending' status with `created_at` and `updated_at` timestamps.
+    - Adds `run_monte_carlo_simulation_task` to `background_tasks`.
+    - Returns initial `SimulationResponse` with 'pending' status, `simulation_id`, and timestamps.
+- `run_monte_carlo_simulation_task(request)`:
+    - The actual background task.
+    - Updates status to 'running' with `updated_at` timestamp.
+    - Retrieves the target formula using `get_formula_from_file(file_id, result_cell_sheet_name, result_cell_coordinate)`.
+    - Initializes and runs `MonteCarloSimulation`.
+    - Updates `SIMULATION_RESULTS_STORE` with 'completed' and results, or 'failed' and error message, including `updated_at` timestamp.
+- `get_simulation_status_or_results(simulation_id)`: Retrieves status/results from the store, updating `updated_at`.
+
+### 2.5. Simulation Router (`backend/simulation/router.py`)
+- **Status:** COMPLETED
+- `POST /api/simulations/run`: Calls `initiate_simulation`. Returns `202 Accepted`.
+- `GET /api/simulations/{simulation_id}`: Calls `get_simulation_status_or_results`.
+
+### 2.6. GPU Management (`backend/gpu/manager.py`)
+- **Status:** COMPLETED (Basic Structure)
+- `GPUManager` class with `initialize_gpu`, `shutdown`, `is_gpu_available`, `get_gpu_count`.
+- `gpu_manager` (global instance).
+- **Integration:** `main.py` calls `gpu_manager.initialize_gpu()` on startup and `gpu_manager.shutdown()` on shutdown.
+
+### 2.7. Main Application (`backend/main.py`)
+- **Status:** COMPLETED (Setup for Sim)
+- Includes API routers for excel_parser, simulation, auth.
+- Startup/shutdown events for GPU manager.
+
+### 2.8. Backend Testing
+- **Status:** NEEDS IMPLEMENTATION
+- Unit and integration tests for parsing, formula evaluation, simulation logic, and API endpoints.
+
+## 3. Frontend Implementation (React, Redux)
+
+### 3.1. Excel File Upload & Display
+- **Status:** LARGELY COMPLETED
+- **`frontend/src/services/excelService.js`:**
+    - `uploadExcelFile(file)`: Uploads file to `POST /api/excel-parser/upload`.
+    - Other helper functions may exist but core upload is primary.
+- **`frontend/src/store/excelSlice.js`:**
+    - **Status:** COMPLETED
+    - `uploadExcel` async thunk calls `uploadExcelFile`.
+    - Stores `ExcelFileResponse` (with `file_id, filename, sheets: List[SheetData]`) in Redux state.
+    - Selectors like `selectFileInfo`, `selectFirstSheetData` available.
+- **`frontend/src/components/excel-parser/ExcelUploader.jsx`:**
+    - **Status:** COMPLETED
+    - Uses `react-dropzone`. Dispatches `uploadExcel`.
+    - Manages `selectedSheetName` local state.
+    - Renders `SheetTabs.jsx`.
+    - Renders `ExcelViewWithConfig.jsx` with `fileId` and `selectedSheetData`.
+- **`frontend/src/components/excel-parser/SheetTabs.jsx`:**
+    - **Status:** COMPLETED
+    - Allows selection of sheets if multiple exist.
+- **`frontend/src/components/excel-parser/ExcelGridDisplay.jsx`:**
+    - **Status:** COMPLETED
+    - Uses `@handsontable/react` and `HyperFormula` for grid display and local formula evaluation.
+    - Receives `sheetData`.
+    - Dispatches `setCurrentGridSelection` to `simulationSetupSlice` on cell selection/deselection/change, providing cell coordinate, value, and sheet name.
+- **`frontend/src/components/excel-parser/ExcelViewWithConfig.jsx`:**
+    - **Status:** COMPLETED
+    - Wrapper for `ExcelGridDisplay` and `SimulationConfigurator`.
+    - Dispatches `initializeSetup` or `resetSetup` to `simulationSetupSlice` based on `fileId` and `sheetData` changes.
+    - Renders `SimulationResultsDisplay`.
+- **`frontend/src/components/excel-parser/ExcelPreview.jsx`:**
+    - **Status:** OBSOLETE or Not Used in current flow.
+
+### 3.2. Simulation Configuration UI
+- **Status:** COMPLETED
+- **Component: `frontend/src/components/simulation/SimulationConfigurator.jsx`:**
+    - Displays `currentGridSelection` from `simulationSetupSlice`.
+    - Buttons "Set/Edit as Input" and "Set as Result."
+    - Form for min/likely/max for input variables (local state, pre-fills if editing).
+    - Dispatches actions (`addInputVariable`, `setResultCell`, etc.) to `simulationSetupSlice`.
+    - Lists configured input variables and the result cell; allows removal/clearing.
+    - Input for iterations, dispatches `setIterations`.
+    - "Run Simulation" button:
+        - Constructs `SimulationRequest` payload.
+        - Dispatches `runSimulation` thunk (from `simulationSlice`).
+        - UI elements are disabled during simulation run/polling.
+- **State Management: `frontend/src/store/simulationSetupSlice.js`:**
+    - **Status:** COMPLETED
+    - Stores `fileId`, `currentSheetName`.
+    - `inputVariables: [{ name (coord), sheetName, min_value, most_likely, max_value }, ...]`.
+    - `resultCell: { name (coord), sheetName }`.
+    - `iterations`.
+    - `currentGridSelection: { name (coord), value (string), sheetName }`.
+    - Reducers: `initializeSetup`, `resetSetup`, `setCurrentGridSelection`, `addInputVariable`, `removeInputVariable`, `setResultCell`, `clearResultCell`, `setIterations`.
+
+### 3.3. Sheet Selection UI
+- **Status:** COMPLETED (via `SheetTabs.jsx` and `ExcelUploader.jsx` logic)
+- Users can switch between sheets, and `ExcelViewWithConfig` updates `simulationSetupSlice` context.
+
+### 3.4. Simulation Execution and Results Display
+- **Status:** COMPLETED (Core functionality with basic histogram)
+- **Service: `frontend/src/services/simulationService.js`:**
+    - **Status:** COMPLETED
+    - `postRunSimulation(simulationRequest)`: Calls `POST /api/simulations/run`.
+    - `getSimulationStatus(simulationId)`: Calls `GET /api/simulations/{simulation_id}`.
+- **State Management: `frontend/src/store/simulationSlice.js`:**
+    - **Status:** COMPLETED
+    - Stores `currentSimulationId`, `status` ('idle', 'pending', 'running', 'completed', 'failed'), `results` (full `SimulationResult` from backend), `error`, `isLoadingInitialRun`, `isPolling`.
+    - `runSimulation` async thunk:
+        - Calls `postRunSimulation`.
+        - Initiates polling by dispatching `fetchSimulationStatus`.
+    - `fetchSimulationStatus` async thunk:
+        - Calls `getSimulationStatus`.
+        - Implements polling logic using `setTimeout` if status is 'pending' or 'running'.
+        - Stops polling on 'completed' or 'failed'.
+    - Reducers: `resetSimulationState`, `cancelPolling`.
+- **Component: `frontend/src/components/simulation/SimulationResultsDisplay.jsx`:**
+    - **Status:** COMPLETED
+    - Displays simulation ID, status, and error messages.
+    - If 'completed', displays statistics (mean, median, etc.) and percentiles.
+    - Renders a histogram using `react-chartjs-2` based on `results.histogram` data.
+    - "Stop Monitoring" button calls `cancelPolling`.
+    - "Refresh Status" button to manually re-fetch.
+
+### 3.5. UI for Handling Edits (Saving to Backend - Optional/Future Enhancement)
+- **Status:** NOT IMPLEMENTED (Currently edits are local to Handsontable)
+- This is a future enhancement if needed.
+
+### 3.6. Error Handling and User Feedback
+- **Status:** PARTIAL / NEEDS ENHANCEMENT
+- Basic error display from API calls in `SimulationResultsDisplay` and uploader.
+- Loading indicators (`isLoadingInitialRun`, `isPolling` used, button text changes).
+- Could be more granular and user-friendly.
+
+### 3.7. Authentication Integration
+- **Status:** ASSUMED (Depends on overall app structure)
+- API service files have placeholders for auth headers.
+
+### 3.8. Persistent Simulation Results Store (Backend Enhancement - Optional/Future)
+- **Status:** NOT IMPLEMENTED (Currently in-memory `SIMULATION_RESULTS_STORE`)
+- For production, simulation results should be saved to a database.
+
+## 4. Next Immediate Steps
+
+1.  **Backend Schema Note:** The note in `2.2. Simulation Schemas` about `result_cell_sheet_name` in `SimulationRequest` needing to be added to the schema: this was actually already present. `VariableConfig` also correctly includes `sheet_name`. So this point is RESOLVED.
+2.  **Frontend Testing:** Thoroughly test the Excel upload, multi-sheet display, simulation configuration across different sheets, simulation execution, polling, and results display (including histogram).
+3.  **UI/UX Refinements:**
+    - Improve loading indicators and user feedback during simulation.
+    - Enhance error message presentation.
+4.  **Consider `ExcelPreview.jsx`:** Determine if `frontend/src/components/excel-parser/ExcelPreview.jsx` is still needed or can be removed if `ExcelGridDisplay.jsx` serves all previewing purposes.
+
+## 5. Broader Considerations & Future Work
+-   **Enhance `_safe_excel_eval`:** The current formula evaluator is very limited. This is a key area for improvement.
+-   **Persistent Cell Edits (Frontend to Backend):** Decide if frontend edits to the grid should be saved back to the server (Task 3.5).
+-   **Comprehensive Backend Testing (Task 2.8).**
+-   **GPU Simulation Path:** Fully test and enable the `_run_simulation_gpu` path.
+-   **Persistent Simulation Results Store (Backend Task 3.8).**
+-   **Advanced Charting Features:** Add more interactivity or options to the histogram.
+-   **Cancel Running Simulation (Backend):** Implement a backend endpoint to truly cancel an in-progress simulation if "Stop Monitoring" is meant to do more than just stop frontend polling.

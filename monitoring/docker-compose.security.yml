@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  fail2ban:
+    image: crazymax/fail2ban:latest
+    container_name: fail2ban
+    network_mode: "host"
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - ./fail2ban:/data
+      - ./logs:/var/log:ro
+    environment:
+      - TZ=UTC
+      - F2B_LOG_LEVEL=INFO
+    restart: unless-stopped
+
+  logrotate:
+    image: vegardit/traefik-logrotate:latest
+    container_name: logrotate
+    volumes:
+      - ./logs:/logs
+    environment:
+      - LOGROTATE_INTERVAL=daily
+      - LOGROTATE_COPIES=7
+    restart: unless-stopped
+
+  security-scanner:
+    image: owasp/zap2docker-stable:latest
+    container_name: security-scanner
+    volumes:
+      - ./security-reports:/zap/wrk/:rw
+    command: zap-baseline.py -t http://nginx:80 -J security-report.json
+    depends_on:
+      - nginx
+    profiles:
+      - security-scan

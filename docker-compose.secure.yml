@@ -1,0 +1,125 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app:ro  # Read-only mount
+      - /app/node_modules
+    environment:
+      - NODE_ENV=production
+      - VITE_API_URL=http://localhost:9090/api
+    user: "node:node"  # Run as non-root user
+    read_only: true    # Read-only filesystem
+    tmpfs:
+      - /tmp
+    networks:
+      - app-network
+    security_opt:
+      - no-new-privileges:true
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.secure  # Use secure Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./uploads:/app/uploads:Z      # SELinux context
+      - ./cache:/app/cache:Z
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/montecarlo
+      - REDIS_URL=redis://redis:6379/0
+    user: "appuser:appuser"  # Run as non-root user
+    read_only: true         # Read-only filesystem
+    tmpfs:
+      - /tmp
+      - /var/log
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - app-network
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CAP_NET_BIND_SERVICE  # Only if needed for port binding
+
+  nginx:
+    image: nginx:alpine
+    container_name: montecarlo-nginx-secure
+    ports:
+      - "9090:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./frontend/dist:/usr/share/nginx/html:ro
+    user: "nginx:nginx"
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - app-network
+    security_opt:
+      - no-new-privileges:true
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db_password  # Use secrets
+      - POSTGRES_DB=montecarlo
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    secrets:
+      - db_password
+    user: "postgres:postgres"
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+    security_opt:
+      - no-new-privileges:true
+
+  redis:
+    image: redis:alpine
+    user: "redis:redis"
+    read_only: true
+    tmpfs:
+      - /tmp
+    networks:
+      - app-network
+    security_opt:
+      - no-new-privileges:true
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv6: "false"

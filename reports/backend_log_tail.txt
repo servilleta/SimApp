@@ -1,0 +1,40 @@
+INFO:     172.18.0.4:54034 - "POST /api/simulations/run HTTP/1.1" 202 Accepted
+INFO:     172.18.0.4:54052 - "POST /api/simulations/run HTTP/1.1" 202 Accepted
+INFO:     172.18.0.4:54038 - "POST /api/simulations/run HTTP/1.1" 202 Accepted
+INFO:     172.18.0.4:54054 - "GET /api/simulations/dc31d674-5172-434a-97a7-bf01b65a82ad/status HTTP/1.1" 200 OK
+INFO:     172.18.0.4:54068 - "GET /api/simulations/dc31d674-5172-434a-97a7-bf01b65a82ad/status HTTP/1.1" 200 OK
+🔄 [CONCURRENCY] Starting concurrency-controlled simulation: dc31d674-5172-434a-97a7-bf01b65a82ad
+📊 [CONCURRENCY] File complexity: large for simulation dc31d674-5172-434a-97a7-bf01b65a82ad
+🔄 [CONCURRENCY] Acquiring large semaphore for dc31d674-5172-434a-97a7-bf01b65a82ad...
+✅ [CONCURRENCY] Acquired large semaphore for dc31d674-5172-434a-97a7-bf01b65a82ad
+🚀 [TASK] Starting Monte Carlo simulation with ID: dc31d674-5172-434a-97a7-bf01b65a82ad
+🚀 [TASK] Request details: simulation_id='dc31d674-5172-434a-97a7-bf01b65a82ad' file_id='dcbb681f-3402-4d0d-9104-b91b404586b9' result_cell_coordinate='I6' result_cell_sheet_name='Complex' variables=[VariableConfig(name='D2', sheet_name='Complex', min_value=0.7200000000000001, most_likely=0.9, max_value=1.08), VariableConfig(name='D3', sheet_name='Complex', min_value=80.0, most_likely=100.0, max_value=120.0), VariableConfig(name='D4', sheet_name='Complex', min_value=8.0, most_likely=10.0, max_value=12.0)] iterations=1000 engine_type='big' original_filename=None
+📊 [TASK] Loading Excel data for dc31d674-5172-434a-97a7-bf01b65a82ad
+📊 [TASK] Excel data loaded successfully for dc31d674-5172-434a-97a7-bf01b65a82ad
+🔍 [TASK] Processing Monte Carlo inputs for dc31d674-5172-434a-97a7-bf01b65a82ad
+DEBUG: Generated 0 calculation steps
+🚀 [TASK] Initializing simulation engine for dc31d674-5172-434a-97a7-bf01b65a82ad
+❌ [TASK] ValueError in simulation dc31d674-5172-434a-97a7-bf01b65a82ad: Invalid cell coordinate: Complex
+❌ [HELPER] Marking simulation dc31d674-5172-434a-97a7-bf01b65a82ad as failed: Simulation setup error: Invalid cell coordinate: Complex
+❌ [CONCURRENCY] Error in simulation execution for dc31d674-5172-434a-97a7-bf01b65a82ad: Simulation setup error: Invalid cell coordinate: Complex
+❌ [HELPER] Marking simulation dc31d674-5172-434a-97a7-bf01b65a82ad as failed: Concurrency control error: Simulation setup error: Invalid cell coordinate: Complex
+INFO:     172.18.0.4:54074 - "GET /api/simulations/e08511cc-a6a3-4831-868b-7893f542c3e9/status HTTP/1.1" 200 OK
+🔄 [CONCURRENCY] Starting concurrency-controlled simulation: 6e20b8a1-01fa-417f-bca2-2f09242103c0
+📊 [CONCURRENCY] File complexity: large for simulation 6e20b8a1-01fa-417f-bca2-2f09242103c0
+🔄 [CONCURRENCY] Acquiring large semaphore for 6e20b8a1-01fa-417f-bca2-2f09242103c0...
+✅ [CONCURRENCY] Acquired large semaphore for 6e20b8a1-01fa-417f-bca2-2f09242103c0
+🚀 [TASK] Starting Monte Carlo simulation with ID: 6e20b8a1-01fa-417f-bca2-2f09242103c0
+🚀 [TASK] Request details: simulation_id='6e20b8a1-01fa-417f-bca2-2f09242103c0' file_id='dcbb681f-3402-4d0d-9104-b91b404586b9' result_cell_coordinate='K6' result_cell_sheet_name='Complex' variables=[VariableConfig(name='D2', sheet_name='Complex', min_value=0.7200000000000001, most_likely=0.9, max_value=1.08), VariableConfig(name='D3', sheet_name='Complex', min_value=80.0, most_likely=100.0, max_value=120.0), VariableConfig(name='D4', sheet_name='Complex', min_value=8.0, most_likely=10.0, max_value=12.0)] iterations=1000 engine_type='big' original_filename=None
+📊 [TASK] Loading Excel data for 6e20b8a1-01fa-417f-bca2-2f09242103c0
+📊 [TASK] Excel data loaded successfully for 6e20b8a1-01fa-417f-bca2-2f09242103c0
+🔍 [TASK] Processing Monte Carlo inputs for 6e20b8a1-01fa-417f-bca2-2f09242103c0
+DEBUG: Generated 0 calculation steps
+🚀 [TASK] Initializing simulation engine for 6e20b8a1-01fa-417f-bca2-2f09242103c0
+❌ [TASK] ValueError in simulation 6e20b8a1-01fa-417f-bca2-2f09242103c0: Invalid cell coordinate: Complex
+❌ [HELPER] Marking simulation 6e20b8a1-01fa-417f-bca2-2f09242103c0 as failed: Simulation setup error: Invalid cell coordinate: Complex
+❌ [CONCURRENCY] Error in simulation execution for 6e20b8a1-01fa-417f-bca2-2f09242103c0: Simulation setup error: Invalid cell coordinate: Complex
+❌ [HELPER] Marking simulation 6e20b8a1-01fa-417f-bca2-2f09242103c0 as failed: Concurrency control error: Simulation setup error: Invalid cell coordinate: Complex
+INFO:     172.18.0.4:54090 - "GET /api/simulations/e08511cc-a6a3-4831-868b-7893f542c3e9/status HTTP/1.1" 200 OK
+INFO:     172.18.0.4:54106 - "GET /api/simulations/dc31d674-5172-434a-97a7-bf01b65a82ad/status HTTP/1.1" 200 OK
+INFO:     172.18.0.4:54122 - "GET /api/simulations/6e20b8a1-01fa-417f-bca2-2f09242103c0/status HTTP/1.1" 200 OK
+INFO:     172.18.0.4:54128 - "GET /api/simulations/dc31d674-5172-434a-97a7-bf01b65a82ad HTTP/1.1" 404 Not Found

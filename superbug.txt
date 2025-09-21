@@ -1,0 +1,68 @@
+## VLOOKUP Simulation Bug - Debugging Summary (superbug.txt)
+
+This document summarizes the extensive debugging process for a critical bug preventing simulations with VLOOKUP formulas from running correctly.
+
+### Initial Problem
+- **Symptom**: Simulations involving VLOOKUP formulas with string/text values would complete but return all zero results (mean, median, std_dev, etc.) and empty histograms.
+- **Example**: A VLOOKUP formula `=VLOOKUP(A8, A10:B12, 2, 0)` where `A8` contained the text "A" was failing.
+
+### Investigation & Fixes - A Timeline
+
+**1. VLOOKUP and GPU Kernels**
+- **Investigation**: Initial logs showed the GPU's VLOOKUP kernel (`gpu_vlookup_exact`) was receiving the lookup value but returning `NaN` because it couldn't handle non-numeric (string) data.
+- **Fix Attempt 1**: Implemented a CPU fallback mechanism. When the GPU kernel failed, the operation would be offloaded to a Python-based `excel_vlookup` function that could handle strings.
+- **Result**: **FAILURE**. The issue persisted.
+
+**2. Constant vs. Variable Treatment**
+- **Investigation**: Deeper logging revealed that the VLOOKUP wasn't even receiving the string "A". Instead, it was being passed random float values (e.g., `0.000640...`). This meant that cell `A8`, which should have been a constant, was being incorrectly treated as a Monte Carlo input variable.
+- **Fix Attempt 2**: Modified the simulation engine (`enhanced_engine.py`) to explicitly load all non-formula cells from the uploaded Excel file as constants, ensuring their values were preserved throughout the simulation.
+- **Result**: **FAILURE**. The issue persisted, but the error changed.
+
+**3. The "File Not Found" Race Condition**
+- **Investigation**: The frontend now showed simulations failing immediately with a "Simulation with ID ... not found" error. Backend logs confirmed a `404: File not found` error. The simulation task was starting, but when it tried to read the Excel file to get constants, the file was already gone.
+- **Hypothesis**: A race condition with the file cleanup service. The service was deleting the uploaded file before the simulation worker could finish with it.
+- **Fix Attempt 3**: Modified the file cleanup service (`backend/shared/file_cleanup.py`) to be "simulation-aware".
+    - The `file_id` was added to the simulation's metadata in Redis upon creation.
+    - The cleanup script was updated to fetch a list of all `file_id`s for active simulations and exclude them from deletion.
+- **Result**: **FAILURE**. The exact same `File not found` error continued.
+
+**4. The Zombie Simulation Task**
+- **Investigation**: Added extensive logging to the file cleanup service. The logs revealed that the cleanup function **was never being called** during the simulation's lifecycle. This meant the file was being deleted by another process.
+- **Hypothesis**: The simulation task itself was failing on a pre-flight check, but the background task was not being properly terminated. It would become a "zombie" process. The system would mark it as "failed", the file cleanup would (correctly) see no active simulation and delete the file, but the zombie task would continue running and eventually crash when it tried to access the now-deleted file.
+- **Fix Attempt 4**: Modified the `_mark_simulation_failed` function in `backend/simulation/service.py` to re-raise the exception after marking the simulation as failed. This was intended to force the immediate and complete termination of the background task upon any error.
+- **Result**: **FAILURE**. Inexplicably, the "Simulation not found" error still occurs immediately.
+
+### Current Status: Unresolved
+Despite a logical progression of fixes addressing every identified issue, the core problem persists. The system is still in a state where simulations fail instantly due to the `404: File not found` error. The root cause remains elusive and is likely something more fundamental in the task queuing or file handling logic that has been overlooked. The issue has been escalated.
+
+### 2025-07-?? – Front-End Fatal ReferenceError Persists
+
+We attempted to eliminate the circular-dependency / temporal-dead-zone crash that blanks the React UI by:
+
+1. **Lazy-loading `ExcelUploader`** and wrapping it in `React.Suspense` on all pages.
+2. **Global `ErrorBoundary`** around the whole React tree to prevent total white-screen.
+3. **Refactoring `ExcelUploader.jsx`** – component now declared as a function (`ExcelUploaderInner`) then wrapped with `React.memo` after declaration.
+4. **Lazy-loading `ExcelViewWithConfig`** inside `ExcelUploader` so its heavy imports are not pulled in during initial evaluation.
+5. **Converted `ExcelViewWithConfig.jsx`** from `const = () => {}` to a **hoisted function declaration** to avoid Rollup TDZ issues.
+6. **Rebuilt frontend Docker image with `--no-cache`** after every change and restarted containers.
+
+Despite these steps, the runtime error still fires during simulation progress updates:
+
+```
+ReferenceError: Cannot access '$' before initialization
+    at ExcelViewWithConfig-*.js:14:18661
+    at useState …
+```
+
+• The symbol varies (`E`, `$`), confirming Rollup is still exporting a binding then re-importing it earlier in the chunk tree.
+• Error occurs when `SimulationResultsDisplay` receives progress updates inside `ExcelViewWithConfig`, suggesting the cycle involves **UnifiedProgressTracker ➜ progressManager ➜ SimulationResultsDisplay ➜ ExcelViewWithConfig**.
+• Crash is caught by `ErrorBoundary`, but app still goes blank for the user.
+
+**Next hypotheses**
+A. Another static import deeper inside the `simulation/` folder creates a loop (likely `progressManager` or icon imports).  
+B. Rollup's chunking puts `ExcelViewWithConfig` & `SimulationResultsDisplay` in same chunk; need explicit `import()` code-split.
+
+**Open Tasks**
+1. Identify exact module name mapped to symbol `$` at offset `18661` in `ExcelViewWithConfig-*.js` (source-map lookup).  
+2. Split `SimulationResultsDisplay` and `UnifiedProgressTracker` with dynamic `import()` and ensure no eager import in utility files.  
+3. As ultimate workaround, move long-running progress handling out of React component tree into a global service (web-worker or Redux middleware). 

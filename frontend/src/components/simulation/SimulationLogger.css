@@ -1,0 +1,440 @@
+/* 🚀 SIMULATION LOGGER STYLES */
+
+.simulation-logger-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.simulation-logger-modal {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 1200px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.simulation-logger-header {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 12px 12px 0 0;
+}
+
+.simulation-logger-header h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.simulation-logger-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.simulation-logger-controls label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.simulation-logger-controls select {
+    padding: 5px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 0.9rem;
+}
+
+.simulation-logger-controls select option {
+    background: #333;
+    color: white;
+}
+
+.export-btn, .close-btn {
+    padding: 8px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.export-btn:hover, .close-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.simulation-logger-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    background: #f8f9fa;
+}
+
+/* Simulation Summary */
+.simulation-summary {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+.summary-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.summary-item strong {
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.9rem;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.error-count {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+.no-errors {
+    color: #28a745;
+    font-weight: 600;
+}
+
+/* Configuration Summary */
+.config-summary {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.config-summary h4 {
+    margin: 0 0 15px 0;
+    color: #495057;
+    font-weight: 600;
+}
+
+.config-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+}
+
+.config-grid div {
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* Stages List */
+.stages-list {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stages-list h4 {
+    margin: 0 0 20px 0;
+    color: #495057;
+    font-weight: 600;
+}
+
+.stage-item {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.stage-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stage-header {
+    padding: 15px;
+    cursor: pointer;
+    background: #f8f9fa;
+    transition: all 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stage-header:hover {
+    background: #e9ecef;
+}
+
+.stage-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+}
+
+.stage-icon {
+    font-size: 1.2rem;
+}
+
+.stage-name {
+    font-weight: 600;
+    color: #495057;
+}
+
+.stage-status {
+    background: rgba(0, 0, 0, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+.stage-meta {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.stage-time, .stage-duration {
+    font-family: monospace;
+}
+
+.expand-icon {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.stage-details {
+    padding: 20px;
+    background: white;
+    border-top: 1px solid #e9ecef;
+}
+
+.detail-item {
+    margin-bottom: 12px;
+    display: flex;
+    gap: 10px;
+}
+
+.detail-item strong {
+    min-width: 120px;
+    color: #495057;
+    font-weight: 600;
+}
+
+.detail-value {
+    flex: 1;
+    font-family: monospace;
+    background: #f8f9fa;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* Errors Section */
+.errors-section {
+    background: #fff5f5;
+    border: 1px solid #feb2b2;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.errors-section h4 {
+    margin: 0 0 15px 0;
+    color: #c53030;
+    font-weight: 600;
+}
+
+.error-item {
+    background: white;
+    border: 1px solid #feb2b2;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 10px;
+}
+
+.error-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.error-header strong {
+    color: #c53030;
+}
+
+.error-time {
+    font-size: 0.85rem;
+    color: #6c757d;
+    font-family: monospace;
+}
+
+.error-message {
+    background: #fed7d7;
+    padding: 10px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    color: #c53030;
+    margin-bottom: 10px;
+}
+
+.error-details {
+    background: #f7fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 10px;
+}
+
+.error-details pre {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #4a5568;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* No Logs State */
+.no-logs {
+    text-align: center;
+    padding: 40px;
+    color: #6c757d;
+}
+
+.no-logs p {
+    margin: 10px 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .simulation-logger-overlay {
+        padding: 10px;
+    }
+    
+    .simulation-logger-modal {
+        width: 95%;
+        max-height: 95vh;
+    }
+    
+    .simulation-logger-header {
+        padding: 15px;
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+    
+    .simulation-logger-controls {
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .simulation-summary {
+        grid-template-columns: 1fr;
+    }
+    
+    .config-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .stage-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    
+    .stage-meta {
+        justify-content: space-between;
+    }
+    
+    .error-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 5px;
+    }
+}
+
+/* Animation for stage expansion */
+.stage-details {
+    animation: expandDetails 0.2s ease-out;
+}
+
+@keyframes expandDetails {
+    from {
+        opacity: 0;
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        max-height: 500px;
+    }
+}
+
+/* Scrollbar styling */
+.simulation-logger-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.simulation-logger-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.simulation-logger-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.simulation-logger-content::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+} 

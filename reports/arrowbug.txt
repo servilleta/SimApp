@@ -1,0 +1,222 @@
+# ARROW ENGINE DISPLAY BUG - DETAILED ANALYSIS REPORT
+Date: 2025-06-18
+Author: AI Assistant
+
+## 🔍 CRITICAL BUG ANALYSIS
+
+### **SYMPTOM**
+When user selects "Arrow" engine in the frontend, the progress tracker initially displays "⚡Enhanced" instead of "🏹Arrow", despite the backend correctly receiving and processing the Arrow engine selection.
+
+### **ROOT CAUSE DISCOVERED**
+
+#### **1. BACKEND IS WORKING CORRECTLY**
+The backend logs clearly show:
+```
+🚀 [ENGINE_SELECTION] Running simulation with arrow engine
+🚀 Starting simulation b0bbbea4-bbef-4009-958f-661c0bf7b6a6 with arrow engine
+🏹 [ARROW] Running Arrow simulation for b0bbbea4-bbef-4009-958f-661c0bf7b6a6
+🏹 [ARROW_TEMP_FIX] Using Enhanced engine approach with Arrow optimizations
+```
+
+The backend correctly:
+- ✅ Receives `engine_type='arrow'`
+- ✅ Starts Arrow simulation
+- ✅ Calls Enhanced engine with `engine_type="arrow"` parameter
+- ✅ Passes Arrow optimizations
+
+#### **2. PROGRESS SCHEMA ISSUE**
+The problem occurs in the progress updates. Looking at the logs, we see **CONFLICTING ENGINE INFO** for the same simulation:
+
+**EARLY PROGRESS UPDATES (showing Enhanced)**:
+```json
+'engineInfo': {
+    'engine': 'WorldClassMonteCarloEngine', 
+    'engine_type': 'Enhanced', 
+    'gpu_acceleration': True, 
+    'detected': True
+}
+```
+
+**LATER PROGRESS UPDATES (showing Arrow)**:
+```json
+'engineInfo': {
+    'engine': 'ArrowMonteCarloEngine', 
+    'engine_type': 'Arrow', 
+    'gpu_acceleration': False, 
+    'detected': True
+}
+```
+
+#### **3. THE EXACT PROBLEM**
+The issue is in the **Enhanced Engine initialization phase**. When Arrow engine calls Enhanced engine internally:
+
+1. **Arrow engine starts**: Correctly logs "Running Arrow simulation"
+2. **Enhanced engine initializes**: Creates `WorldClassMonteCarloEngine` instance
+3. **Early progress updates**: Show `WorldClassMonteCarloEngine` with `Enhanced` type
+4. **Later progress updates**: Correctly show `ArrowMonteCarloEngine` with `Arrow` type
+
+### **TECHNICAL ROOT CAUSE**
+
+#### **Location**: `backend/simulation/enhanced_engine.py`
+The Enhanced engine's `run_simulation_from_file()` method creates progress updates during initialization that **don't include the correct `engineInfo`**.
+
+#### **Sequence of Events**:
+1. User selects "Arrow" engine
+2. Backend starts Arrow simulation correctly
+3. Arrow engine calls Enhanced engine with `engine_type="arrow"`
+4. Enhanced engine initializes and sends progress updates
+5. **BUG**: Early progress updates contain auto-detected engine info instead of explicit Arrow info
+6. Progress schema processes these updates and shows "Enhanced"
+7. Later, when actual simulation starts, correct Arrow info is sent
+8. Progress schema updates to show "Arrow"
+
+### **WHY OUR FIXES DIDN'T WORK**
+
+#### **1. Progress Schema Fix**
+Our progress schema fix in `backend/shared/progress_schema.py` works correctly, but it can only process the data it receives. If the Enhanced engine sends incorrect `engineInfo` during initialization, the progress schema has no choice but to display it.
+
+#### **2. Service.py Fix**
+Our fix in `backend/simulation/service.py` to include `engineInfo` in early progress updates works for the main simulation flow, but doesn't affect the Enhanced engine's internal progress updates.
+
+### **THE REAL SOLUTION**
+
+#### **OPTION 1: Fix Enhanced Engine Progress Updates (RECOMMENDED)**
+Modify `backend/simulation/enhanced_engine.py` to:
+1. Accept `engine_type` parameter in `run_simulation_from_file()`
+2. Use the passed `engine_type` to create correct `engineInfo` in ALL progress updates
+3. Ensure early initialization progress updates include the correct engine information
+
+#### **OPTION 2: Override Progress Updates in Arrow Engine**
+Modify the Arrow engine to:
+1. Intercept all progress updates from Enhanced engine
+2. Override the `engineInfo` to always show Arrow engine information
+3. Ensure consistent engine display throughout the simulation
+
+### **IMPLEMENTATION PLAN**
+
+#### **Step 1: Enhanced Engine Fix**
+```python
+# In backend/simulation/enhanced_engine.py
+async def run_simulation_from_file(self, file_path: str, mc_input_params: Dict, 
+                                 constant_params: Dict, target_sheet_name: str, 
+                                 target_cell_coordinate: str, engine_type: str = "enhanced"):
+    
+    # Create correct engineInfo based on passed engine_type
+    if engine_type == "arrow":
+        engine_info = {
+            'engine': 'ArrowMonteCarloEngine',
+            'engine_type': 'Arrow',
+            'gpu_acceleration': False,
+            'detected': True
+        }
+    else:
+        engine_info = {
+            'engine': 'WorldClassMonteCarloEngine',
+            'engine_type': 'Enhanced',
+            'gpu_acceleration': True,
+            'detected': True
+        }
+    
+    # Include engineInfo in ALL progress updates
+    progress_data = {
+        'progress_percentage': 0,
+        'engineInfo': engine_info,
+        # ... other progress data
+    }
+```
+
+#### **Step 2: Progress Update Consistency**
+Ensure ALL progress updates in Enhanced engine include the correct `engineInfo` from the very beginning.
+
+#### **Step 3: Testing**
+1. Select Arrow engine
+2. Verify progress tracker shows "Arrow" from the very first update
+3. Verify no switching between "Enhanced" and "Arrow"
+4. Verify simulation completes successfully
+
+### **ADDITIONAL ISSUES FOUND**
+
+#### **1. Multiple Simulations Problem**
+The logs show **3 different simulations** running simultaneously:
+- `b0bbbea4-bbef-4009-958f-661c0bf7b6a6`
+- `ddc77cca-72ad-4d6c-811d-4b174e6d23db`
+- `07a4e82c-0ff8-4b24-b614-13b90233c085`
+
+This creates confusion in the frontend about which simulation to display.
+
+#### **2. Simulation Cleanup**
+The platform needs better simulation management:
+- Clear old simulations when new ones start
+- Provide clear indication of which simulation is "active"
+- Better delete functionality in admin panel
+
+### **PRIORITY ACTIONS**
+
+#### **IMMEDIATE (HIGH PRIORITY)**
+1. Fix Enhanced engine progress updates to include correct `engineInfo`
+2. Ensure Arrow engine selection shows "Arrow" from the very beginning
+3. Implement simulation cleanup to prevent multiple simulations confusion
+
+#### **MEDIUM PRIORITY**
+1. Improve admin panel delete functionality
+2. Add better simulation state management
+3. Implement automatic cleanup of old simulations
+
+#### **LOW PRIORITY**
+1. Add frontend indicators for active vs. background simulations
+2. Implement simulation queue management
+3. Add simulation history tracking
+
+### **EXPECTED OUTCOME**
+After implementing the Enhanced engine fix:
+- ✅ User selects "Arrow" → Progress tracker shows "🏹Arrow" immediately
+- ✅ No switching between "Enhanced" and "Arrow" during simulation
+- ✅ Consistent engine display throughout the entire simulation lifecycle
+- ✅ Arrow engine benefits (500K dependency limit) work correctly
+- ✅ Simulation completes successfully with correct engine attribution
+
+### **CONCLUSION**
+The bug is NOT in the progress schema or main simulation service. The bug is in the **Enhanced engine's progress update mechanism** that doesn't respect the `engine_type` parameter passed from the Arrow engine. This causes initial progress updates to show incorrect engine information, leading to the confusing "Enhanced" → "Arrow" switch in the frontend.
+
+The fix requires modifying the Enhanced engine to create consistent `engineInfo` based on the passed `engine_type` parameter, ensuring all progress updates from the very beginning show the correct engine type. 
+
+## 🐞 BUG STILL PRESENT - FRONTEND ANALYSIS (2025-06-19)
+
+**Symptom**: Despite backend fixes ensuring `enhanced_engine.py` correctly uses `engine_type` in all progress callbacks, the UI *still* shows "⚡Enhanced" when "🏹Arrow" is selected, especially when multiple target variables trigger concurrent simulations.
+
+**Root Cause Investigation - Frontend**: The issue was traced to how the frontend's `UnifiedProgressTracker.jsx` component handles and displays engine information when multiple simulations are active.
+
+1.  **Shared `engineInfo` State**: `UnifiedProgressTracker.jsx` maintained a *single, shared* `engineInfo` object in its state for all tracked simulations.
+2.  **"Last Write Wins" Logic**: When processing progress updates from multiple concurrent simulations (e.g., for target variables I6, J6, K6), the shared `engineInfo` was updated by whichever simulation's progress data arrived. The update logic was `engine_type: new_data.engine_type || existing_engine_type`.
+3.  **Transient Override**: If an early progress update from *any* of the concurrent simulations (even if transiently or due to internal handoffs in the backend before `engine_type='arrow'` was fully propagated for that specific packet) reported `engine_type: "Enhanced"`, it would overwrite the shared `engineInfo` state. The UI would then display this incorrect "Enhanced" state.
+4.  **Missing Primary Engine Context**: `SimulationResultsDisplay.jsx` did not pass any information to `UnifiedProgressTracker.jsx` about the *user's originally selected engine type* for the overall batch of simulations.
+
+**Evidence from Console Logs & Code Review**:
+-   User console logs clearly showed `UnifiedProgressTracker` processing updates for multiple `simulationId`s.
+-   The critical line `[UnifiedProgressTracker] 🚀 Engine detected: Object` showed the single shared `engineInfo` being updated.
+-   Code review of `UnifiedProgressTracker.jsx` confirmed the shared state and the update logic.
+-   Code review of `SimulationResultsDisplay.jsx` confirmed it didn't pass a primary/intended engine type to the tracker.
+
+### 🛠️ **FRONTEND SOLUTION IMPLEMENTED (2025-06-19)**
+
+To resolve this, a multi-step frontend fix was implemented:
+
+1.  **Store Requested Engine Type in Redux (`simulationSlice.js`)**:
+    *   Modified the `runSimulation` async thunk to include `requested_engine_type: engine_type || 'enhanced'` in its return payload.
+    *   Modified the `runSimulation.fulfilled` reducer to store this `requested_engine_type` within each simulation object in the `state.multipleResults` array.
+    *   **Effect**: `SimulationResultsDisplay.jsx` now has access to the engine type originally requested by the user for each simulation.
+
+2.  **Pass `primaryEngineType` to Tracker (`SimulationResultsDisplay.jsx`)**:
+    *   Modified `SimulationResultsDisplay.jsx` to determine a `primaryEngineType`.
+    *   When simulations are running, it takes `requested_engine_type` from the first running simulation (e.g., `runningSimulations[0].requested_engine_type`).
+    *   This `primaryEngineType` is now passed as a new prop to the `<UnifiedProgressTracker />` component.
+
+3.  **Prioritize `primaryEngineType` in Tracker (`UnifiedProgressTracker.jsx`)**:
+    *   Modified `UnifiedProgressTracker.jsx` to accept the new `primaryEngineType` prop.
+    *   Updated the `updateUnifiedProgress` function:
+        *   If `primaryEngineType` is provided (e.g., "Arrow"), the component's displayed `engineInfo.engine_type` is now locked to this `primaryEngineType`.
+        *   It also adjusts the displayed `engineInfo.engine` (name) and `engineInfo.gpu_acceleration` to be consistent with the `primaryEngineType` (e.g., Arrow engine is not GPU accelerated).
+        *   If `primaryEngineType` is not provided, it falls back to the previous behavior.
+    *   **Effect**: The main engine display in the progress tracker will now consistently show the engine type the user selected for the simulation batch, preventing transient updates from individual concurrent simulations from overriding it.
+
+**Expected Outcome**: The UI should now reliably display "🏹Arrow" (or the correct icon and name) when the Arrow engine is selected, regardless of multiple target variables or internal backend processing paths. The primary engine display will be stable and reflect the user's intent. 

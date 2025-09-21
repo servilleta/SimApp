@@ -1,0 +1,416 @@
+.excel-grid-pro-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: calc(100vh - 250px);
+}
+
+/* Formula Bar - Larger and more accessible */
+.formula-bar {
+  display: flex;
+  align-items: center;
+  height: 42px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+  padding: 0 16px;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.cell-reference {
+  min-width: 80px;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  font-weight: 600;
+  font-size: 14px;
+  color: #374151;
+  text-align: center;
+}
+
+.formula-input {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  overflow: hidden;
+  height: 36px;
+}
+
+.fx-label {
+  background: #f3f4f6;
+  padding: 10px 12px;
+  font-weight: 600;
+  font-size: 12px;
+  color: #6b7280;
+  border-right: 1px solid #d1d5db;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.formula-input input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  height: 100%;
+}
+
+/* Grid Wrapper with Zoom - Use full available space */
+.grid-wrapper {
+  flex: 1;
+  position: relative;
+  overflow: auto;
+  min-height: calc(100vh - 300px);
+}
+
+/* Grid Container - Expanded */
+.grid-container {
+  height: 100%;
+  width: 100%;
+  overflow: auto;
+}
+
+/* Zoom Controls - Better positioned */
+.zoom-controls {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 8px 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+.zoom-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: #f3f4f6;
+  color: #374151;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.zoom-btn:hover:not(:disabled) {
+  background: #e5e7eb;
+  color: #1f2937;
+  transform: scale(1.05);
+}
+
+.zoom-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.zoom-level {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  min-width: 45px;
+  text-align: center;
+}
+
+/* AG Grid Custom Styling - Enhanced for larger view */
+.ag-theme-alpine {
+  --ag-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --ag-font-size: 14px;
+  --ag-border-color: #e5e7eb;
+  --ag-header-background-color: #f9fafb;
+  --ag-header-foreground-color: #374151;
+  --ag-row-hover-color: #f8fafc;
+  --ag-selected-row-background-color: #dbeafe;
+  --ag-row-height: 32px;
+  --ag-header-height: 36px;
+  --ag-cell-horizontal-padding: 12px;
+}
+
+.ag-theme-alpine .ag-header {
+  border-bottom: 2px solid #e5e7eb;
+  font-weight: 600;
+}
+
+.ag-theme-alpine .ag-header-cell {
+  border-right: 1px solid #e5e7eb;
+  padding: 0 8px;
+}
+
+.ag-theme-alpine .ag-cell {
+  border-right: 1px solid #f3f4f6;
+  border-bottom: 1px solid #f3f4f6;
+  padding: 0;
+  line-height: 32px;
+}
+
+/* Row Headers - Enhanced */
+.row-header-cell {
+  background: #f9fafb !important;
+  border-right: 2px solid #e5e7eb !important;
+  font-weight: 600;
+  color: #374151;
+  text-align: center;
+  user-select: none;
+  min-width: 50px;
+}
+
+.row-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  padding: 4px;
+}
+
+/* Column Headers - Enhanced */
+.column-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-weight: 600;
+  color: #374151;
+  font-size: 13px;
+  min-width: 80px;
+}
+
+/* Excel Cell Content - Larger and more spacious */
+.excel-cell-content {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+  min-height: 32px;
+}
+
+.excel-cell-content:hover {
+  background: #f8fafc;
+}
+
+.cell-value {
+  flex: 1;
+  font-size: 12px;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.formula-indicator {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  font-size: 9px;
+  color: #059669;
+  font-weight: 600;
+  background: #d1fae5;
+  padding: 1px 2px;
+  border-radius: 2px;
+  line-height: 1;
+}
+
+/* Cell Selection and Variable Styling - Enhanced visibility */
+.ag-theme-alpine .ag-cell.selected-cell {
+  background: #dbeafe !important;
+  border: 2px solid #3b82f6 !important;
+  box-shadow: 0 0 0 1px #3b82f6 inset;
+}
+
+/* Input Variable Cells - Enhanced with proper Braun colors */
+.ag-theme-alpine .ag-cell.input-variable-cell {
+  background: var(--color-success-bg, #f0f9f4) !important;
+  border: 2px solid var(--color-success, #4CAF50) !important;
+}
+
+.ag-theme-alpine .ag-cell.input-variable-cell .excel-cell-content {
+  background: var(--color-success-bg, #f0f9f4);
+}
+
+.ag-theme-alpine .ag-cell.input-variable-cell .cell-value {
+  color: var(--color-success, #4CAF50);
+  font-weight: 600;
+}
+
+.ag-theme-alpine .ag-cell.input-variable-cell .formula-indicator {
+  color: var(--color-success, #4CAF50);
+}
+
+/* Target/Result Cells - Enhanced with proper Braun colors */
+.ag-theme-alpine .ag-cell.result-cell {
+  background: rgba(255, 107, 53, 0.1) !important;
+  border: 2px solid var(--color-braun-orange, #FF6B35) !important;
+}
+
+.ag-theme-alpine .ag-cell.result-cell .excel-cell-content {
+  background: rgba(255, 107, 53, 0.1);
+}
+
+.ag-theme-alpine .ag-cell.result-cell .cell-value {
+  color: var(--color-braun-orange, #FF6B35);
+  font-weight: 600;
+}
+
+.ag-theme-alpine .ag-cell.result-cell .formula-indicator {
+  color: var(--color-braun-orange, #FF6B35);
+}
+
+.excel-grid-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 400px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.loading-message {
+  color: #6b7280;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.ag-theme-alpine .ag-cell-focus {
+  border: 2px solid #3b82f6 !important;
+}
+
+.ag-theme-alpine .ag-cell-range-selected {
+  background: #dbeafe !important;
+  border-color: #3b82f6 !important;
+}
+
+.ag-theme-alpine .ag-body-horizontal-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.ag-theme-alpine .ag-body-vertical-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+@media (max-width: 768px) {
+  .excel-grid-pro-container {
+    height: 400px;
+  }
+
+  .formula-bar {
+    height: 36px;
+    padding: 0 8px;
+    gap: 8px;
+  }
+
+  .zoom-controls {
+    bottom: 8px;
+    right: 8px;
+    padding: 4px 6px;
+  }
+
+  .zoom-btn {
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+  }
+
+  .excel-cell-content {
+    padding: 1px 4px;
+  }
+
+  .ag-theme-alpine {
+    --ag-font-size: 11px;
+  }
+}
+
+/* Dark Mode Support - DISABLED to force light theme */
+/* @media (prefers-color-scheme: dark) {
+  .excel-grid-pro-container {
+    background: #1f2937;
+    border-color: #374151;
+  }
+  
+  .formula-bar {
+    background: #111827;
+    border-color: #374151;
+  }
+  
+  .cell-reference,
+  .formula-input {
+    background: #374151;
+    border-color: #4b5563;
+    color: #f9fafb;
+  }
+  
+  .cell-value {
+    color: #f9fafb;
+  }
+  
+  .excel-cell-content:hover {
+    background: #374151;
+  }
+  
+  .ag-theme-alpine {
+    --ag-background-color: #1f2937;
+    --ag-foreground-color: #f9fafb;
+    --ag-border-color: #374151;
+    --ag-header-background-color: #111827;
+    --ag-header-foreground-color: #f9fafb;
+    --ag-row-hover-color: #374151;
+  }
+} */
+
+/* Generic excel cell base class for consistent visibility */
+.excel-cell {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 0 8px;
+  box-sizing: border-box;
+  color: #1f2937;
+}
+
+/* Excel cells with borders - ensure borders are visible */
+.ag-theme-alpine .ag-cell.excel-cell-with-borders {
+  border: none !important; /* Remove default AG Grid borders */
+  /* Borders will be applied via cellStyle function */
+}
+
+/* Ensure Excel cell content doesn't interfere with borders */
+.excel-cell-with-borders .excel-cell-content {
+  border: none !important;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  box-sizing: border-box;
+} 

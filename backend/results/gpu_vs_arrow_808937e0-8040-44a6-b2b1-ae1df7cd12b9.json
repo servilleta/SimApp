@@ -1,0 +1,12 @@
+[
+  {
+    "engine": "enhanced",
+    "iterations": 500000,
+    "elapsed_sec": 814.763304371
+  },
+  {
+    "engine": "arrow",
+    "iterations": 500000,
+    "elapsed_sec": 3.6139346840000144
+  }
+]

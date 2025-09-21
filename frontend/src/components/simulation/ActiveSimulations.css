@@ -1,0 +1,277 @@
+.active-simulations-container {
+  background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 
+    4px 4px 8px rgba(0, 0, 0, 0.1),
+    -4px -4px 8px rgba(255, 255, 255, 0.8);
+}
+
+/* Highlight when simulations are active */
+.active-simulations-container:has(.simulations-list) {
+  background: linear-gradient(145deg, #fff3cd, #ffeaa7);
+  border: 2px solid #ff9900;
+  box-shadow: 
+    4px 4px 12px rgba(255, 153, 0, 0.2),
+    -4px -4px 12px rgba(255, 255, 255, 0.9);
+}
+
+.active-simulations-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.active-simulations-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #374151;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+.header-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.refresh-button {
+  padding: 6px 12px;
+  background: linear-gradient(145deg, #e3f2fd, #bbdefb);
+  color: #1976d2;
+  border: 1px solid rgba(25, 118, 210, 0.3);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 
+    2px 2px 4px rgba(0, 0, 0, 0.1),
+    -2px -2px 4px rgba(255, 255, 255, 0.8);
+  transition: all 0.2s ease;
+}
+
+.refresh-button:hover:not(:disabled) {
+  background: linear-gradient(145deg, #bbdefb, #90caf9);
+  transform: translateY(-1px);
+}
+
+.refresh-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cancel-all-button {
+  padding: 6px 12px;
+  background: linear-gradient(145deg, #ffebee, #ffcdd2);
+  color: #d32f2f;
+  border: 1px solid rgba(211, 47, 47, 0.3);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 
+    2px 2px 4px rgba(0, 0, 0, 0.1),
+    -2px -2px 4px rgba(255, 255, 255, 0.8);
+  transition: all 0.2s ease;
+  animation: pulse-red 2s infinite;
+}
+
+.cancel-all-button:hover:not(:disabled) {
+  background: linear-gradient(145deg, #ffcdd2, #ef9a9a);
+  transform: translateY(-1px);
+}
+
+.cancel-all-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cleanup-button {
+  padding: 6px 12px;
+  background: linear-gradient(145deg, #f3e5f5, #e1bee7);
+  color: #7b1fa2;
+  border: 1px solid rgba(123, 31, 162, 0.3);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 
+    2px 2px 4px rgba(0, 0, 0, 0.1),
+    -2px -2px 4px rgba(255, 255, 255, 0.8);
+  transition: all 0.2s ease;
+}
+
+.cleanup-button:hover:not(:disabled) {
+  background: linear-gradient(145deg, #e1bee7, #ce93d8);
+  transform: translateY(-1px);
+}
+
+.cleanup-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@keyframes pulse-red {
+  0%, 100% { 
+    box-shadow: 
+      2px 2px 4px rgba(0, 0, 0, 0.1),
+      -2px -2px 4px rgba(255, 255, 255, 0.8),
+      0 0 5px rgba(211, 47, 47, 0.3);
+  }
+  50% { 
+    box-shadow: 
+      2px 2px 4px rgba(0, 0, 0, 0.1),
+      -2px -2px 4px rgba(255, 255, 255, 0.8),
+      0 0 15px rgba(211, 47, 47, 0.6);
+  }
+}
+
+.no-simulations {
+  text-align: center;
+  padding: 20px;
+  background: linear-gradient(145deg, #e8f5e8, #c8e6c8);
+  border-radius: 8px;
+  color: #2e7d32;
+  font-weight: 500;
+}
+
+.loading-simulations {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+  font-style: italic;
+}
+
+.simulations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.simulation-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: linear-gradient(145deg, #ffffff, #f8fafc);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  box-shadow: 
+    2px 2px 4px rgba(0, 0, 0, 0.05),
+    -2px -2px 4px rgba(255, 255, 255, 0.8);
+  transition: all 0.2s ease;
+}
+
+.simulation-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 
+    3px 3px 6px rgba(0, 0, 0, 0.1),
+    -3px -3px 6px rgba(255, 255, 255, 0.9);
+}
+
+.simulation-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.simulation-id {
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.simulation-details {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.simulation-progress {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1976d2;
+  background: linear-gradient(145deg, #e3f2fd, #bbdefb);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(25, 118, 210, 0.2);
+}
+
+.simulation-engine {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #f57c00;
+  background: linear-gradient(145deg, #fff3e0, #ffe0b2);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(245, 124, 0, 0.2);
+}
+
+.simulation-status {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #388e3c;
+  background: linear-gradient(145deg, #e8f5e8, #c8e6c8);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(56, 142, 60, 0.2);
+  text-transform: capitalize;
+}
+
+.cancel-button {
+  padding: 8px 12px;
+  background: linear-gradient(145deg, #ffebee, #ffcdd2);
+  color: #d32f2f;
+  border: 1px solid rgba(211, 47, 47, 0.3);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 
+    2px 2px 4px rgba(0, 0, 0, 0.1),
+    -2px -2px 4px rgba(255, 255, 255, 0.8);
+  transition: all 0.2s ease;
+}
+
+.cancel-button:hover:not(:disabled) {
+  background: linear-gradient(145deg, #ffcdd2, #ef9a9a);
+  transform: translateY(-1px);
+}
+
+.cancel-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .active-simulations-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .header-buttons {
+    justify-content: center;
+  }
+  
+  .simulation-item {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .simulation-details {
+    justify-content: center;
+  }
+  
+  .cancel-button {
+    align-self: center;
+  }
+} 

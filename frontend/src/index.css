@@ -1,0 +1,218 @@
+/* Import Dieter Rams Braun-Inspired Color System */
+@import './styles/colors.css';
+
+/* Global styles for SimApp - Clean Modern Design */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-white);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* Clean design utility classes */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.text-center {
+  text-align: center;
+}
+
+/* Spacing utilities */
+.mt-1 { margin-top: 0.25rem; }
+.mt-2 { margin-top: 0.5rem; }
+.mt-3 { margin-top: 0.75rem; }
+.mt-4 { margin-top: 1rem; }
+.mt-6 { margin-top: 1.5rem; }
+.mt-8 { margin-top: 2rem; }
+
+.mb-1 { margin-bottom: 0.25rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-3 { margin-bottom: 0.75rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mb-6 { margin-bottom: 1.5rem; }
+.mb-8 { margin-bottom: 2rem; }
+
+.p-1 { padding: 0.25rem; }
+.p-2 { padding: 0.5rem; }
+.p-3 { padding: 0.75rem; }
+.p-4 { padding: 1rem; }
+.p-6 { padding: 1.5rem; }
+.p-8 { padding: 2rem; }
+
+/* Typography */
+.text-xs { font-size: 0.75rem; }
+.text-sm { font-size: 0.875rem; }
+.text-base { font-size: 1rem; }
+.text-lg { font-size: 1.125rem; }
+.text-xl { font-size: 1.25rem; }
+.text-2xl { font-size: 1.5rem; }
+.text-3xl { font-size: 1.875rem; }
+.text-4xl { font-size: 2.25rem; }
+
+.font-normal { font-weight: 400; }
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+
+/* Updated Colors - Now using Braun-inspired palette */
+.text-gray-400 { color: var(--color-text-tertiary); }
+.text-gray-500 { color: var(--color-medium-grey); }
+.text-gray-600 { color: var(--color-text-secondary); }
+.text-gray-700 { color: var(--color-dark-grey); }
+.text-gray-800 { color: var(--color-charcoal); }
+.text-gray-900 { color: var(--color-text-primary); }
+
+.text-blue-500 { color: var(--color-braun-orange); }
+.text-blue-600 { color: var(--color-braun-orange-dark); }
+.text-red-500 { color: var(--color-error); }
+.text-red-600 { color: var(--color-error); }
+.text-green-500 { color: var(--color-success); }
+.text-green-600 { color: var(--color-success); }
+
+.bg-white { background-color: var(--color-white); }
+.bg-gray-50 { background-color: var(--color-warm-white); }
+.bg-gray-100 { background-color: var(--color-warm-white); }
+.bg-gray-200 { background-color: var(--color-light-grey); }
+
+/* Borders and Rounded Corners */
+.border { border: 1px solid var(--color-border-light); }
+.border-gray-200 { border-color: var(--color-border-light); }
+.border-gray-300 { border-color: var(--color-medium-grey); }
+
+.rounded { border-radius: 0.25rem; }
+.rounded-md { border-radius: 0.375rem; }
+.rounded-lg { border-radius: 0.5rem; }
+.rounded-xl { border-radius: 0.75rem; }
+.rounded-2xl { border-radius: 1rem; }
+
+/* Updated Shadows - Using Braun variables */
+.shadow { box-shadow: var(--shadow-sm); }
+.shadow-md { box-shadow: var(--shadow-md); }
+.shadow-lg { box-shadow: var(--shadow-lg); }
+
+/* Updated button styles - Using Braun palette */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.btn-primary {
+  background-color: var(--color-braun-orange);
+  color: var(--color-white);
+}
+
+.btn-primary:hover {
+  background-color: var(--color-braun-orange-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-secondary {
+  background-color: var(--color-white);
+  color: var(--color-dark-grey);
+  border: 1px solid var(--color-dark-grey);
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-warm-white);
+  border-color: var(--color-charcoal);
+  color: var(--color-charcoal);
+}
+
+/* Updated input styles - Using Braun palette */
+.input {
+  display: block;
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border-light);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  color: var(--color-text-primary);
+  background-color: var(--color-white);
+  transition: border-color var(--transition-base);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-braun-orange);
+  box-shadow: var(--shadow-focus);
+}
+
+/* Updated card styles - Using Braun palette */
+.card {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border-light);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-base);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 16px;
+  }
+  
+  body {
+    font-size: 14px;
+  }
+}
+
+/* Updated scrollbar for webkit browsers - Using Braun palette */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-warm-white);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-medium-grey);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-dark-grey);
+} 

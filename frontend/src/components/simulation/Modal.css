@@ -1,0 +1,237 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: var(--color-white);
+  border-radius: 8px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border-light);
+}
+
+.modal-content.large-modal {
+  max-width: 700px;
+}
+
+.modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--color-border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--color-warm-white);
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: var(--color-charcoal);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--color-medium-grey);
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+  background: var(--color-light-grey);
+  color: var(--color-charcoal);
+}
+
+.modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--color-border-light);
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  background: var(--color-warm-white);
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--color-charcoal);
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border-light);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: border-color 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--color-braun-orange);
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.simulation-info {
+  background: var(--color-warm-white);
+  padding: 1rem;
+  border-radius: 6px;
+  margin-top: 1rem;
+  border: 1px solid var(--color-border-light);
+}
+
+.simulation-info h4 {
+  margin: 0 0 0.75rem 0;
+  color: var(--color-charcoal);
+}
+
+.simulation-info p {
+  margin: 0.25rem 0;
+  color: var(--color-medium-grey);
+  font-size: 0.9rem;
+}
+
+.error-message {
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error-border);
+  color: var(--color-error);
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-top: 1rem;
+}
+
+.loading-spinner {
+  text-align: center;
+  padding: 2rem;
+  color: var(--color-medium-grey);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: var(--color-medium-grey);
+}
+
+.simulations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.simulation-item {
+  border: 1px solid var(--color-border-light);
+  border-radius: 6px;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  transition: border-color 0.2s ease;
+}
+
+.simulation-item:hover {
+  border-color: var(--color-medium-grey);
+}
+
+.simulation-info h4 {
+  margin: 0 0 0.5rem 0;
+  color: var(--color-charcoal);
+}
+
+.simulation-info .description {
+  color: var(--color-medium-grey);
+  font-size: 0.9rem;
+  margin: 0 0 0.75rem 0;
+}
+
+.metadata {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  color: var(--color-medium-grey);
+}
+
+.simulation-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.btn-primary, .btn-secondary, .btn-danger {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.btn-small {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+}
+
+.btn-primary {
+  background: var(--color-braun-orange);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-braun-orange-dark);
+}
+
+.btn-primary:disabled {
+  background: var(--color-medium-grey);
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: var(--color-white);
+  color: var(--color-charcoal);
+  border: 1px solid var(--color-border-light);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--color-light-grey);
+}
+
+.btn-danger {
+  background: var(--color-error);
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--color-error-dark);
+} 

@@ -1,0 +1,118 @@
+{
+  "total_tests": 3,
+  "passed_tests": 3,
+  "failed_tests": 0,
+  "skipped_tests": 0,
+  "success_rate": 100.0,
+  "total_execution_time": 0.21728777885437012,
+  "peak_memory_usage": 4.27734375,
+  "timestamp": "2025-07-05T05:14:07.517117+00:00",
+  "system_info": {
+    "cpu_count": 8,
+    "memory_total": 31529070592,
+    "python_version": "3.10.12 (main, May 27 2025, 17:12:29) [GCC 11.4.0]",
+    "platform": "linux",
+    "ultra_engine_available": false
+  },
+  "test_results": [
+    {
+      "test_name": "Memory Management Performance",
+      "category": "Memory Management",
+      "status": "PASS",
+      "execution_time": 0.210982084274292,
+      "memory_usage": 4.27734375,
+      "throughput": 0.0,
+      "error_message": null,
+      "metrics": {
+        "start_memory_mb": 96.796875,
+        "peak_memory_mb": 101.07421875,
+        "end_memory_mb": 98.7109375,
+        "memory_freed_mb": 2.36328125,
+        "arrays_created": 10
+      },
+      "timestamp": "2025-07-05T05:14:07.728481+00:00"
+    },
+    {
+      "test_name": "Statistical Validation Performance",
+      "category": "Statistical Validation",
+      "status": "PASS",
+      "execution_time": 0.0037453174591064453,
+      "memory_usage": 0.6484375,
+      "throughput": 29637007.066013113,
+      "error_message": null,
+      "metrics": {
+        "total_samples": 111000,
+        "test_count": 3,
+        "accurate_tests": 2,
+        "statistical_results": [
+          {
+            "sample_size": 1000,
+            "mean": 15.010168859011332,
+            "std": 1.931517409768484,
+            "theoretical_mean": 15.0,
+            "theoretical_std": 2.041241452319315,
+            "mean_error_percent": 0.06779239340887717,
+            "std_error_percent": 5.375358335299322,
+            "statistical_accuracy": false
+          },
+          {
+            "sample_size": 10000,
+            "mean": 15.011306527804692,
+            "std": 2.0244720947811703,
+            "theoretical_mean": 15.0,
+            "theoretical_std": 2.041241452319315,
+            "mean_error_percent": 0.07537685203127846,
+            "std_error_percent": 0.8215273856549941,
+            "statistical_accuracy": true
+          },
+          {
+            "sample_size": 100000,
+            "mean": 14.99566356550108,
+            "std": 2.0465292480322907,
+            "theoretical_mean": 15.0,
+            "theoretical_std": 2.041241452319315,
+            "mean_error_percent": 0.02890956332613825,
+            "std_error_percent": 0.2590480272173295,
+            "statistical_accuracy": true
+          }
+        ]
+      },
+      "timestamp": "2025-07-05T05:14:07.732960+00:00"
+    },
+    {
+      "test_name": "Benchmark and Scaling Performance",
+      "category": "Benchmark and Scaling",
+      "status": "PASS",
+      "execution_time": 0.0025603771209716797,
+      "memory_usage": 1.28515625,
+      "throughput": 43352988.54641959,
+      "error_message": null,
+      "metrics": {
+        "total_operations": 111000,
+        "workload_count": 3,
+        "avg_scaling_efficiency": 4225464.344301464,
+        "scaling_results": [
+          {
+            "workload_size": 1000,
+            "execution_time": 0.00012063980102539062,
+            "operations_per_second": 8289138.339920948,
+            "scaling_efficiency": 8289138.339920948
+          },
+          {
+            "workload_size": 10000,
+            "execution_time": 0.00025916099548339844,
+            "operations_per_second": 38586053.357865684,
+            "scaling_efficiency": 3858605.3357865685
+          },
+          {
+            "workload_size": 100000,
+            "execution_time": 0.0018916130065917969,
+            "operations_per_second": 52864935.719687425,
+            "scaling_efficiency": 528649.3571968742
+          }
+        ]
+      },
+      "timestamp": "2025-07-05T05:14:07.736035+00:00"
+    }
+  ]
+}

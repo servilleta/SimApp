@@ -1,0 +1,132 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+      - "24678:24678"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:9090/api
+      - VITE_AUTH0_DOMAIN=dev-jw6k27f0v5tcgl56.eu.auth0.com
+      - VITE_AUTH0_CLIENT_ID=UDXorRodTlUmgkigfaWW81Rr40gKpeAJ
+      - VITE_AUTH0_AUDIENCE=https://simapp.ai/api
+      - PAPERSPACE_API_KEY=fe6ccc742bb4e07d4951c11ebc360b
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ./uploads:/app/uploads
+      - ./cache:/app/cache
+      # Mount CUDA/NVRTC libraries from host system for GPU acceleration
+      - /usr/lib/x86_64-linux-gnu/libnvrtc.so.11.2:/usr/lib/x86_64-linux-gnu/libnvrtc.so.11.2:ro
+      - /usr/lib/x86_64-linux-gnu/libnvrtc.so.11.5.119:/usr/lib/x86_64-linux-gnu/libnvrtc.so.11.5.119:ro
+      - /usr/lib/x86_64-linux-gnu/libnvrtc-builtins.so.11.5:/usr/lib/x86_64-linux-gnu/libnvrtc-builtins.so.11.5:ro
+      - /usr/lib/x86_64-linux-gnu/libnvrtc-builtins.so.11.5.119:/usr/lib/x86_64-linux-gnu/libnvrtc-builtins.so.11.5.119:ro
+      - /usr/lib/x86_64-linux-gnu/libcuda.so:/usr/lib/x86_64-linux-gnu/libcuda.so:ro
+      - /usr/lib/x86_64-linux-gnu/libcuda.so.1:/usr/lib/x86_64-linux-gnu/libcuda.so.1:ro
+      - /usr/lib/x86_64-linux-gnu/libcuda.so.470.256.02:/usr/lib/x86_64-linux-gnu/libcuda.so.470.256.02:ro
+      # Mount CURAND libraries for random number generation
+      - /usr/local/cuda-11.8/targets/x86_64-linux/lib/libcurand.so.10:/usr/lib/x86_64-linux-gnu/libcurand.so.10:ro
+      - /usr/local/cuda-11.8/targets/x86_64-linux/lib/libcurand.so.10.3.0.86:/usr/lib/x86_64-linux-gnu/libcurand.so.10.3.0.86:ro
+      # Mount CUBLAS libraries for linear algebra operations
+      - /usr/local/cuda-11.8/targets/x86_64-linux/lib/libcublas.so.11:/usr/lib/x86_64-linux-gnu/libcublas.so.11:ro
+      - /usr/local/cuda-11.8/targets/x86_64-linux/lib/libcublas.so.11.11.3.6:/usr/lib/x86_64-linux-gnu/libcublas.so.11.11.3.6:ro
+      - /usr/local/cuda-11.8/targets/x86_64-linux/lib/libcublasLt.so.11:/usr/lib/x86_64-linux-gnu/libcublasLt.so.11:ro
+      - /usr/local/cuda-11.8/targets/x86_64-linux/lib/libcublasLt.so.11.11.3.6:/usr/lib/x86_64-linux-gnu/libcublasLt.so.11.11.3.6:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/montecarlo
+      - REDIS_URL=redis://redis:6379/0
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - STRIPE_WEBHOOK_SECRET=whsec_sH558wHXvOrSsKPZykakA1N9I7ckhLJk
+      - PAPERSPACE_API_KEY=fe6ccc742bb4e07d4951c11ebc360b
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - app-network
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+          cpus: '4.0'
+        reservations:
+          memory: 2G
+          cpus: '1.0'
+          # GPU configuration commented out - can be enabled when NVIDIA drivers are available
+          # devices:
+          #   - driver: nvidia
+          #     count: 1
+          #     capabilities: [gpu]
+
+  nginx:
+    image: nginx:alpine
+    container_name: montecarlo-nginx
+    ports:
+      - "9090:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./frontend/dist:/usr/share/nginx/html
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - app-network
+    security_opt:
+      - no-new-privileges:true
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=montecarlo
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+    security_opt:
+      - no-new-privileges:true
+
+  redis:
+    image: redis:alpine
+    networks:
+      - app-network
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge
+  monitoring:
+    external: true
+    name: monitoring_monitoring

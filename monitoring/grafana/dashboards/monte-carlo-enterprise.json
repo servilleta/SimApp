@@ -1,0 +1,171 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Monte Carlo Enterprise Platform",
+    "tags": ["monte-carlo", "enterprise", "ultra-engine"],
+    "style": "dark",
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "🚀 Ultra Engine Performance",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(simulation_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th Percentile Response Time"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 0.1},
+                {"color": "red", "value": 0.5}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "💰 Revenue Metrics",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(monthly_revenue_per_user)",
+            "legendFormat": "Total Monthly Revenue"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "currencyUSD",
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "yellow", "value": 50000},
+                {"color": "green", "value": 150000}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "👥 User Satisfaction",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "avg(user_satisfaction_score)",
+            "legendFormat": "NPS Score"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": -100,
+            "max": 100,
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": -100},
+                {"color": "yellow", "value": 0},
+                {"color": "green", "value": 50}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0}
+      },
+      {
+        "id": 4,
+        "title": "⚡ System Health",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "up{job=\"monte-carlo-backend\"}",
+            "legendFormat": "Backend Status"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {"options": {"0": {"text": "DOWN"}}, "type": "value"},
+              {"options": {"1": {"text": "UP"}}, "type": "value"}
+            ],
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0}
+      },
+      {
+        "id": 5,
+        "title": "🔄 Simulation Success Rate",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(simulation_success_total[5m]) / rate(simulation_total[5m]) * 100",
+            "legendFormat": "Success Rate %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 6,
+        "title": "📈 Active Simulations",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "active_simulations_total",
+            "legendFormat": "Active Simulations"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+      },
+      {
+        "id": 7,
+        "title": "💻 Resource Utilization",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(container_cpu_usage_seconds_total[5m]) * 100",
+            "legendFormat": "CPU Usage %"
+          },
+          {
+            "expr": "container_memory_usage_bytes / container_spec_memory_limit_bytes * 100",
+            "legendFormat": "Memory Usage %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        },
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16}
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "5s",
+    "schemaVersion": 27,
+    "version": 1
+  }
+}

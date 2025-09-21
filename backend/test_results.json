@@ -1,0 +1,66 @@
+{
+  "performance_tests": [],
+  "variation_tests": [
+    {
+      "test_name": "Constants Test (Should have zero variation)",
+      "mean": 0.10000000000000002,
+      "std_dev": 1.3877787807814457e-17,
+      "min": 0.1,
+      "max": 0.1,
+      "range": 0.0,
+      "expected": "zero variation",
+      "status": "PASS"
+    },
+    {
+      "test_name": "Variable Inputs (Should have variation)",
+      "mean": 0.108,
+      "std_dev": 0.02481934729198171,
+      "min": 0.08,
+      "max": 0.15,
+      "range": 0.06999999999999999,
+      "expected": "variation > 0.01",
+      "status": "PASS"
+    },
+    {
+      "test_name": "Normal Distribution (Should have proper variation)",
+      "mean": 99.42734733644903,
+      "std_dev": 20.215784356556252,
+      "min": 41.86499481880506,
+      "max": 161.27536396015017,
+      "range": 119.41036914134511,
+      "expected": "variation > 0.1",
+      "status": "PASS"
+    }
+  ],
+  "evaluation_tests": [
+    {
+      "test_name": "Simple Addition",
+      "formula": "=A1+B1",
+      "result": 30,
+      "expected": 30,
+      "difference": 0.0,
+      "status": "PASS"
+    },
+    {
+      "test_name": "NPV-like Formula",
+      "formula": "=A1*0.1+B1*0.05",
+      "result": 12.5,
+      "expected": 12.5,
+      "difference": 0.0,
+      "status": "PASS"
+    },
+    {
+      "test_name": "Complex Financial",
+      "formula": "=(A1+B1)/2*1.1",
+      "result": 1210.0,
+      "expected": 1210.0,
+      "difference": 0.0,
+      "status": "PASS"
+    }
+  ],
+  "summary": {
+    "total_tests": 6,
+    "passed_tests": 6,
+    "success_rate": 100.0
+  }
+}

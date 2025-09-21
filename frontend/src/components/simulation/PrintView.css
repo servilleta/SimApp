@@ -1,0 +1,172 @@
+/* Print View Styles */
+/* Removed Google Fonts import to fix CORS issues during PDF generation */
+
+body {
+  background-color: #f3f4f6; /* A light grey for the non-printed view */
+}
+
+.print-view-container {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  width: 100%;
+  max-width: 1200px; /* Max width for screen view */
+  margin: 2rem auto; /* Center on screen */
+  background: white;
+  padding: 0;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  border-radius: 8px;
+  overflow: hidden; /* Contains children */
+}
+
+.print-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 1.5rem;
+  color: #666;
+}
+
+.print-header {
+  text-align: center;
+  padding: 2rem;
+  border-bottom: 2px solid #e5e7eb;
+  margin-bottom: 2rem;
+}
+
+.print-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.print-metadata {
+  color: #666;
+  font-size: 0.875rem;
+}
+
+.print-content {
+  padding: 0 2rem;
+}
+
+.print-footer {
+  text-align: center;
+  padding: 1.5rem 2rem;
+  margin-top: 2rem;
+  border-top: 1px solid #e5e7eb;
+  color: #6c757d;
+  font-size: 0.875rem;
+}
+
+/* Print-specific styles */
+@media print {
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+
+  body, html {
+    width: 100%;
+    height: auto;
+    background: white !important;
+    -webkit-print-color-adjust: exact; /* Chrome, Safari */
+    color-adjust: exact; /* Firefox */
+  }
+
+  /* Universal box-sizing for print */
+  * {
+    box-sizing: border-box !important;
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Hide elements that shouldn't be printed */
+  .no-print,
+  button,
+  .export-button,
+  .export-pdf-button,
+  .export-ppt-button,
+  .sidebar,
+  nav,
+  header,
+  .navigation,
+  .decimal-control,
+  .decimal-slider-braun,
+  input[type="range"],
+  .controls,
+  .simulation-status,
+  .progress-tracker {
+    display: none !important;
+  }
+
+  .print-view-container,
+  .simulation-results-display {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* Ensure proper page breaks and avoid cutting off content */
+  .target-results-section,
+  .box-plot-overview-section {
+    page-break-inside: avoid;
+    margin-top: 25px; /* Add some space between sections */
+  }
+
+  /* Ensure charts scale down and are visible */
+  .chart-container, .box-plot-container {
+    max-width: 100%;
+    height: auto !important;
+    page-break-inside: avoid;
+  }
+
+  canvas {
+    max-width: 100%;
+    height: auto !important;
+  }
+
+  /* Adjust spacing for print */
+  .print-header {
+    padding: 0 0 1rem 0;
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+
+  .print-content {
+    padding: 0;
+  }
+
+  /* Ensure statistics tables and grids are readable */
+  .stats-table, .percentiles-grid-wide {
+    font-size: 9pt;
+    width: 100%;
+  }
+
+  /* Force wrapping in grids to prevent overflow */
+  .percentiles-grid-wide > div {
+    word-break: break-all;
+  }
+
+  /* Remove shadows and unnecessary effects */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Ensure proper colors for print */
+  .certainty-range {
+    color: #FF6B35 !important;
+  }
+
+  /* Page numbers in footer */
+  .print-footer::after {
+    content: "Page " counter(page);
+    position: absolute;
+    bottom: 0;
+    right: 0;
+  }
+}

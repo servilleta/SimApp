@@ -1,0 +1,87 @@
+Go-Live Checklist (Free Launch)
+================================
+
+SECTION 1: User Management & Authentication
+------------------------------------------
+[ ] Admin user creation flow
+[ ] User registration & email verification
+[ ] Password reset functionality
+[ ] Role-based access control (RBAC)
+[ ] Multi-factor authentication (optional but recommended)
+[ ] Account deletion / data export for GDPR compliance
+
+SECTION 2: Security & Compliance
+--------------------------------
+[ ] Serve all traffic over HTTPS (valid SSL/TLS certificates)
+[ ] Secure password hashing (bcrypt/argon2)
+[ ] Input validation & sanitization (SQL injection, XSS, CSRF)
+[ ] Rate limiting & brute-force protection
+[ ] Encryption at rest for sensitive data
+[ ] Secrets management (environment variables, vault)
+[ ] Automatic dependency vulnerability scanning
+[ ] Penetration test & external security audit
+[ ] GDPR compliance (consent management, data minimisation, DPIA)
+[ ] Data deletion & portability on user request
+[ ] Incident response & breach notification plan
+[ ] Regular security patch schedule
+
+SECTION 3: Legal & Policy
+-------------------------
+[x] Terms of Service drafted & published (see legal/TERMS_OF_SERVICE.md)
+[x] Privacy Policy drafted & published (see legal/PRIVACY_POLICY.md)
+[x] Cookie Policy & consent banner implemented (CookieBanner component)
+[x] Data Processing Agreement template (for EU customers) (see legal/DATA_PROCESSING_AGREEMENT_TEMPLATE.md)
+[x] Open-source licence compliance & attribution (see legal/OPEN_SOURCE_LICENSES.md)
+[x] Acceptable Use Policy (see legal/ACCEPTABLE_USE_POLICY.md)
+[ ] Automated open-source licence audit tooling (npm license-checker & pip-licenses)
+[ ] CI job to regenerate legal/OPEN_SOURCE_LICENSES.md on every build
+[ ] UI footer link to new "Open-Source Licences" page
+[ ] Audit non-code assets (fonts/images/icons) for licence obligations
+
+SECTION 4: Infrastructure & Operations
+--------------------------------------
+[ ] Production Docker images tagged & versioned
+[ ] CI/CD pipeline with automated tests & deployments
+[ ] Automated database migrations
+[ ] Centralised logging (ELK/Loki) & log retention policy
+[ ] Monitoring & alerting (Prometheus/Grafana)
+[ ] Health checks & auto-restart configured
+[ ] Automated backups & periodic restore tests
+[ ] Disaster recovery plan documented
+[ ] Load & stress testing completed
+[ ] Scalability review (horizontal/vertical scaling options)
+[ ] Cost monitoring & budget alerts
+
+SECTION 5: Application Quality
+------------------------------
+[ ] Unit test coverage ≥ 80%
+[ ] Integration & end-to-end tests passing
+[ ] Linter & static analysis clean
+[ ] Performance profiling & bottleneck fixes
+[ ] Accessibility review (WCAG 2.1 AA)
+[ ] Internationalisation/localisation readiness
+
+SECTION 6: Product & User Experience
+------------------------------------
+[ ] Landing page with clear value proposition
+[ ] Onboarding flow & in-app tutorials/tooltips
+[ ] In-app feedback & support channel (email/chat)
+[ ] Usage analytics (GDPR-compliant)
+[ ] Comprehensive documentation & FAQs
+[ ] Versioned API documentation (OpenAPI / Swagger)
+
+SECTION 7: Data Management
+--------------------------
+[ ] Data retention & deletion policy defined
+[ ] Data classification & labeling
+[ ] Data export tool for users (GDPR right to portability)
+[ ] Anonymisation / pseudonymisation where appropriate
+
+SECTION 8: Launch Preparation
+-----------------------------
+[ ] Final full Docker rebuild & cache clear
+[ ] Final regression test suite passes 100%
+[ ] Staging → Production promotion checklist completed
+[ ] Rollback strategy defined & tested
+[ ] Post-launch monitoring dashboard ready
+[ ] Launch announcement plan (blog, newsletter, social media) 

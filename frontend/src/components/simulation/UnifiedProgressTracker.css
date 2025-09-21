@@ -1,0 +1,594 @@
+/* Unified Progress Tracker - Braun Inspired Clean Design */
+
+.unified-progress-tracker {
+  background: var(--color-white);
+  border-radius: 12px;
+  padding: 24px;
+  margin: 16px 0;
+  border: 1px solid var(--color-border-light);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Completed State Styling */
+.unified-progress-tracker.completed-state {
+  background: rgba(76, 175, 80, 0.05);
+  border: 1px solid var(--color-success, #4CAF50);
+}
+
+.unified-progress-tracker.completed-state .progress-fill {
+  background: var(--color-success, #4CAF50);
+}
+
+/* Header Section */
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.main-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.progress-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-charcoal);
+  margin: 0;
+}
+
+.current-stage {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--color-medium-grey);
+}
+
+.progress-stats {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: var(--color-warm-white);
+  border-radius: 8px;
+  padding: 12px 16px;
+  border: 1px solid var(--color-border-light);
+  min-width: 80px;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--color-medium-grey);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-charcoal);
+}
+
+/* Main Progress Bar */
+.main-progress-container {
+  margin-bottom: 24px;
+}
+
+.progress-bar-unified {
+  position: relative;
+}
+
+.progress-track {
+  position: relative;
+  height: 24px;
+  background: var(--color-light-grey);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  position: relative;
+  height: 100%;
+  background: var(--color-braun-orange);
+  border-radius: 12px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+/* Override progress fill color when completed (100%) - Stronger selectors */
+.unified-progress-tracker.completed-state .progress-fill,
+.unified-progress-tracker .progress-fill[style*="width: 100%"],
+.unified-progress-tracker[class*="completed"] .progress-fill {
+  background: var(--color-success, #4CAF50) !important;
+}
+
+/* Also apply to phase progress bars when completed */
+.unified-progress-tracker.completed-state .phase-progress-fill,
+.unified-progress-tracker .phase-item.completed .phase-progress-fill,
+.phase-progress-fill[style*="width: 100%"] {
+  background: var(--color-success, #4CAF50) !important;
+}
+
+/* Apply to variable progress bars when completed */
+.unified-progress-tracker.completed-state .variable-progress-fill,
+.unified-progress-tracker .variable-item.completed .variable-progress-fill,
+.variable-progress-fill[style*="width: 100%"] {
+  background: var(--color-success, #4CAF50) !important;
+}
+
+/* Ensure completion state is properly applied to the container */
+.unified-progress-tracker[data-progress="100"],
+.unified-progress-tracker[data-completed="true"] {
+  background: rgba(76, 175, 80, 0.05);
+  border: 1px solid var(--color-success, #4CAF50);
+}
+
+.unified-progress-tracker[data-progress="100"] .progress-fill,
+.unified-progress-tracker[data-completed="true"] .progress-fill {
+  background: var(--color-success, #4CAF50) !important;
+}
+
+.progress-shine {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: shine 3s infinite;
+}
+
+@keyframes shine {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+.progress-percentage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-charcoal);
+  z-index: 2;
+}
+
+/* Phase Progress Indicators */
+.phases-container {
+  margin-bottom: 24px;
+}
+
+.phases-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.phase-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--color-warm-white);
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid var(--color-border-light);
+  transition: all 0.2s ease;
+}
+
+.phase-item.active {
+  border-color: var(--color-braun-orange);
+  background: var(--color-white);
+}
+
+/* Stronger selectors for completed phases */
+.phase-item.completed,
+.phases-grid .phase-item.completed,
+.phase-item[class*="completed"] {
+  border-color: var(--color-success) !important;
+  background: var(--color-success-bg) !important;
+}
+
+/* Target specific simulation phases that might be at 100% */
+.phase-item:has(.phase-percentage:contains("100%")),
+.phase-item .phase-progress-fill[style*="width: 100%"] {
+  border-color: var(--color-success) !important;
+  background: var(--color-success-bg) !important;
+}
+
+/* Force completion styling for any phase with 100% progress */
+.phase-item:has(.phase-progress-fill[style*="width: 100%"]) {
+  border-color: var(--color-success) !important;
+  background: var(--color-success-bg) !important;
+}
+
+.phase-item:has(.phase-progress-fill[style*="width: 100%"]) .phase-icon {
+  background: var(--color-success) !important;
+  color: white !important;
+}
+
+.phase-item:has(.phase-progress-fill[style*="width: 100%"]) .phase-progress-fill {
+  background: var(--color-success) !important;
+}
+
+.phase-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-light-grey);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-medium-grey);
+  flex-shrink: 0;
+}
+
+.phase-item.completed .phase-icon {
+  background: var(--color-success);
+  color: white;
+}
+
+.phase-details {
+  flex: 1;
+}
+
+.phase-name {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-charcoal);
+  margin-bottom: 4px;
+}
+
+.phase-progress {
+  font-size: 0.7rem;
+  color: var(--color-medium-grey);
+}
+
+.phase-progress-bar {
+  height: 4px;
+  background: var(--color-light-grey);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.phase-progress-fill {
+  height: 100%;
+  background: var(--color-braun-orange);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.phase-item.completed .phase-progress-fill {
+  background: var(--color-success);
+}
+
+.phase-percentage {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--color-dark-grey);
+  margin-top: 2px;
+}
+
+/* Variables Container */
+.variables-container {
+  margin-bottom: 24px;
+}
+
+.variables-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-charcoal);
+  margin-bottom: 12px;
+}
+
+.variables-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+}
+
+.variable-item {
+  background: var(--color-white);
+  border: 1px solid var(--color-border-light);
+  border-radius: 8px;
+  padding: 12px;
+  transition: all 0.2s ease;
+}
+
+.variable-item.running {
+  border-color: var(--color-braun-orange);
+  background: var(--color-warm-white);
+}
+
+.variable-item.completed {
+  border-color: var(--color-success);
+  background: var(--color-success-bg);
+}
+
+.variable-item.failed {
+  border-color: var(--color-error);
+  background: var(--color-error-bg);
+}
+
+.variable-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.variable-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-charcoal);
+}
+
+.variable-status {
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--color-light-grey);
+  color: var(--color-medium-grey);
+}
+
+.variable-item.running .variable-status {
+  background: var(--color-braun-orange);
+  color: white;
+}
+
+.variable-item.completed .variable-status {
+  background: var(--color-success);
+  color: white;
+}
+
+.variable-item.failed .variable-status {
+  background: var(--color-error);
+  color: white;
+}
+
+.variable-progress {
+  margin-bottom: 8px;
+}
+
+.variable-progress-bar {
+  height: 6px;
+  background: var(--color-light-grey);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.variable-progress-fill {
+  height: 100%;
+  background: var(--color-braun-orange);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.variable-item.completed .variable-progress-fill {
+  background: var(--color-success);
+}
+
+.variable-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--color-medium-grey);
+}
+
+.variable-percentage {
+  font-weight: 500;
+}
+
+.variable-iterations {
+  font-weight: 400;
+}
+
+/* Engine Details */
+.engine-details {
+  background: var(--color-warm-white);
+  border: 1px solid var(--color-border-light);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.engine-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-charcoal);
+  margin-bottom: 8px;
+}
+
+.engine-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+.engine-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: var(--color-white);
+  border: 1px solid var(--color-border-light);
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.engine-label {
+  font-size: 0.7rem;
+  color: var(--color-medium-grey);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.engine-value {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-charcoal);
+}
+
+.engine-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-success);
+}
+
+/* Iterations Summary */
+.iterations-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--color-warm-white);
+  border: 1px solid var(--color-border-light);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.summary-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.summary-label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--color-medium-grey);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.summary-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-charcoal);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .unified-progress-tracker {
+    padding: 16px;
+    margin: 12px 0;
+  }
+
+  .progress-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .main-status {
+    width: 100%;
+  }
+
+  .progress-stats {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .phases-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .variables-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .iterations-summary {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .progress-title {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .unified-progress-tracker {
+    padding: 12px;
+  }
+
+  .progress-track {
+    height: 20px;
+  }
+
+  .progress-percentage {
+    font-size: 0.7rem;
+  }
+
+  .phase-item {
+    padding: 8px;
+  }
+
+  .variable-item {
+    padding: 8px;
+  }
+}
+
+/* SOLUTION 3: Enhanced individual progress display */
+.variable-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.variable-iterations {
+  font-size: 0.75rem;
+  color: var(--color-charcoal-light);
+  background: rgba(0, 0, 0, 0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.update-indicator {
+  font-size: 0.8rem;
+  color: var(--color-primary, #2196F3);
+  animation: pulse 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+  from {
+    opacity: 0.6;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+} 

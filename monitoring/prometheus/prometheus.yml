@@ -1,0 +1,105 @@
+# 🔍 PROMETHEUS CONFIGURATION - Enterprise Monitoring
+# Phase 5 Week 17-18: Comprehensive Metrics Collection
+#
+# This configuration monitors:
+# - Monte Carlo simulation performance
+# - System resource utilization
+# - Business metrics (revenue, usage, satisfaction)
+# - Ultra Engine optimization metrics
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'monte-carlo-enterprise'
+    environment: 'production'
+
+# Rules for alerting
+rule_files:
+  - "rules/*.yml"
+
+# Alertmanager configuration (optional)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#           - alertmanager:9093
+
+scrape_configs:
+  # Monte Carlo Backend - Ultra Engine Metrics
+  - job_name: 'monte-carlo-backend'
+    static_configs:
+      - targets: ['backend:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 15s  # Fixed: interval must be greater than timeout
+    scrape_timeout: 10s
+    params:
+      format: ['prometheus']
+
+  # Enterprise Analytics Service
+  - job_name: 'enterprise-analytics'
+    static_configs:
+      - targets: ['backend:8000']
+    metrics_path: '/enterprise/analytics/metrics/prometheus'
+    scrape_interval: 30s
+    params:
+      service: ['analytics']
+
+  # Enterprise Billing Service
+  - job_name: 'enterprise-billing'
+    static_configs:
+      - targets: ['backend:8000']
+    metrics_path: '/enterprise/billing/metrics/prometheus'
+    scrape_interval: 60s  # Lower frequency for billing
+    params:
+      service: ['billing']
+
+  # System Metrics - Node Exporter
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 15s
+
+  # Container Metrics - cAdvisor
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 15s
+
+  # Database Metrics - PostgreSQL
+  - job_name: 'postgres-exporter'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+    scrape_interval: 30s
+
+  # Redis Metrics
+  - job_name: 'redis-exporter'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+    scrape_interval: 30s
+
+  # Nginx Metrics
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx:80']
+    metrics_path: '/nginx-status'
+    scrape_interval: 15s
+
+  # Frontend Performance (Custom metrics from React app)
+  - job_name: 'frontend-performance'
+    static_configs:
+      - targets: ['frontend:3000']
+    metrics_path: '/api/metrics'
+    scrape_interval: 30s
+
+  # Self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Grafana metrics
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:3000']
+    metrics_path: '/metrics'
+    scrape_interval: 30s

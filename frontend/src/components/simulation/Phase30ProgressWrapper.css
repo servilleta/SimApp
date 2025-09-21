@@ -1,0 +1,270 @@
+/* Phase 30 Progress Wrapper Styles */
+
+.phase30-wrapper {
+  width: 100%;
+  position: relative;
+}
+
+.phase30-wrapper.enhanced-mode {
+  border: 2px solid rgba(59, 130, 246, 0.2);
+  border-radius: 12px;
+  padding: 4px;
+  background: linear-gradient(145deg, rgba(59, 130, 246, 0.02), rgba(139, 92, 246, 0.02));
+}
+
+.phase30-wrapper.legacy-mode {
+  border: 2px solid rgba(107, 114, 128, 0.2);
+  border-radius: 12px;
+  padding: 16px;
+  background: linear-gradient(145deg, rgba(107, 114, 128, 0.02), rgba(156, 163, 175, 0.02));
+}
+
+/* Mode Toggle */
+.mode-toggle {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+  position: relative;
+  z-index: 10;
+}
+
+.toggle-button {
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-button:not(.legacy) {
+  background: linear-gradient(145deg, #3b82f6, #8b5cf6);
+  color: white;
+}
+
+.toggle-button:not(.legacy):hover {
+  background: linear-gradient(145deg, #2563eb, #7c3aed);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+.toggle-button.legacy {
+  background: linear-gradient(145deg, #6b7280, #9ca3af);
+  color: white;
+}
+
+.toggle-button.legacy:hover {
+  background: linear-gradient(145deg, #4b5563, #6b7280);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(107, 114, 128, 0.3);
+}
+
+/* Legacy Mode Display */
+.legacy-progress {
+  padding: 24px;
+  text-align: center;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.legacy-progress p {
+  margin: 8px 0;
+  color: #6b7280;
+}
+
+.legacy-progress p:last-child {
+  font-weight: 600;
+  font-size: 18px;
+  color: #374151;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+/* Debug Information */
+.phase30-debug {
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 11px;
+}
+
+.phase30-debug details {
+  cursor: pointer;
+}
+
+.phase30-debug summary {
+  font-weight: 600;
+  color: #6b7280;
+  padding: 8px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.02);
+  margin-bottom: 8px;
+}
+
+.phase30-debug summary:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.debug-content {
+  padding-left: 12px;
+}
+
+.debug-content h4 {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  margin: 12px 0 6px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  padding-bottom: 4px;
+}
+
+.debug-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.debug-label {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.debug-status {
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+}
+
+.debug-status.connected {
+  background: rgba(34, 197, 94, 0.1);
+  color: #166534;
+}
+
+.debug-status.polling {
+  background: rgba(251, 191, 36, 0.1);
+  color: #92400e;
+}
+
+.debug-status.disconnected {
+  background: rgba(239, 68, 68, 0.1);
+  color: #991b1b;
+}
+
+.debug-content pre {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 8px;
+  border-radius: 4px;
+  overflow-x: auto;
+  max-height: 200px;
+  overflow-y: auto;
+  margin: 8px 0;
+  color: #374151;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+/* Enhanced Mode Indicator */
+.phase30-wrapper.enhanced-mode::before {
+  content: '🚀 Phase 30 Enhanced Progress';
+  position: absolute;
+  top: -8px;
+  left: 16px;
+  background: linear-gradient(145deg, #3b82f6, #8b5cf6);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  z-index: 20;
+}
+
+.phase30-wrapper.legacy-mode::before {
+  content: '⚠️ Legacy Progress Mode';
+  position: absolute;
+  top: -8px;
+  left: 16px;
+  background: linear-gradient(145deg, #6b7280, #9ca3af);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3);
+  z-index: 20;
+}
+
+/* Animation for mode transitions */
+.phase30-wrapper {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.phase30-wrapper.enhanced-mode {
+  animation: enhancedModeEnter 0.5s ease-out;
+}
+
+@keyframes enhancedModeEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+    border-color: transparent;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    border-color: rgba(59, 130, 246, 0.2);
+  }
+}
+
+.phase30-wrapper.legacy-mode {
+  animation: legacyModeEnter 0.3s ease-out;
+}
+
+@keyframes legacyModeEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .phase30-wrapper.enhanced-mode::before,
+  .phase30-wrapper.legacy-mode::before {
+    font-size: 9px;
+    padding: 3px 8px;
+    left: 8px;
+  }
+  
+  .mode-toggle {
+    margin-bottom: 16px;
+  }
+  
+  .toggle-button {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+  
+  .debug-content {
+    padding-left: 8px;
+  }
+  
+  .debug-content pre {
+    font-size: 9px;
+  }
+}

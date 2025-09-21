@@ -1,0 +1,212 @@
+# 🚀 Development Environment Startup Sequence
+
+On Mac:
+Power on Paperspace (web console or CLI)
+SSH connect: ssh paperspace
+On Paperspace (via SSH):
+Navigate: cd PROJECT
+Start services: docker-compose down && docker-compose build --no-cache && docker-compose up -d
+Verify: docker-compose ps
+Monitor logs: python3 backend/monitor_console.py --clear (optional)
+On Mac Browser:
+Open: http://localhost:9090
+Start coding! 🚀
+
+
+
+
+
+## Overview
+This guide explains how to start your Monte Carlo simulation development environment from scratch each time you begin working.
+
+**Setup:** Mac (local) ↔ SSH ↔ Paperspace Server (remote)
+
+---
+
+## 📋 Prerequisites Checklist
+
+### On Mac:
+- [ ] SSH config file exists at `~/.ssh/config` with paperspace host configuration
+- [ ] SSH key exists at `~/.ssh/GpuServerSSH`
+- [ ] Terminal application ready
+
+### On Paperspace:
+- [ ] Paperspace server is powered on and accessible
+- [ ] Docker and docker-compose are installed
+- [ ] PROJECT directory exists with all code
+
+---
+
+## 🔥 Startup Sequence
+
+### 1. **Start Paperspace Server**
+```bash
+# Power on your Paperspace machine through:
+# - Paperspace web console, OR
+# - Paperspace CLI: paperspace machines start --machineId YOUR_MACHINE_ID
+```
+
+### 2. **Connect via SSH from Mac**
+```bash
+# Open terminal on Mac and connect:
+ssh paperspace
+
+# This uses your SSH config which automatically forwards these ports:
+# - 9090 (nginx/main app)
+# - 8000 (backend API)
+# - 3000 (frontend dev server)
+# - 24678 (Vite HMR)
+```
+
+### 3. **Navigate to Project Directory**
+```bash
+cd PROJECT
+```
+
+### 4. **Start Docker Containers**
+```bash
+# Start all services with fresh build (recommended):
+docker-compose down && docker-compose build --no-cache && docker-compose up -d
+
+# OR start existing containers (faster):
+docker-compose up -d
+```
+
+### 5. **Verify Services are Running**
+```bash
+# Check all containers are up:
+docker-compose ps
+
+# Should show all services as "Up":
+# - project-frontend-1 (ports 3000:3000, 24678:24678)
+# - project-backend-1 (port 8000:8000)
+# - montecarlo-nginx (port 9090:80)
+# - project-postgres-1
+# - project-redis-1
+```
+
+### 6. **Start Console Monitoring (Optional)**
+```bash
+# In a separate terminal tab/window on Paperspace:
+python3 backend/monitor_console.py --clear
+
+# This will show real-time browser console logs from your Mac browser
+# Keep this running while developing for seamless log monitoring
+```
+
+---
+
+## 🌐 Access Points
+
+Once everything is running, access your application from **Mac browser**:
+
+- **Main Application:** http://localhost:9090
+- **Backend API:** http://localhost:8000
+- **Frontend Dev Server:** http://localhost:3000 (if needed directly)
+
+---
+
+## 🔧 Development Workflow
+
+### Hot Reloading (Frontend)
+- Edit any file in `frontend/src/`
+- Save the file
+- Browser automatically updates (no manual refresh needed)
+
+### Console Logging
+- All browser console logs automatically appear in your Paperspace SSH session
+- No need to copy-paste logs between browser and terminal
+
+### Backend Development
+- Edit files in `backend/`
+- Backend auto-reloads on file changes
+- API accessible at http://localhost:8000
+
+---
+
+## 🛑 Shutdown Sequence
+
+When finished working:
+
+```bash
+# Stop console monitoring (Ctrl+C if running)
+
+# Stop Docker containers:
+docker-compose down
+
+# Exit SSH connection:
+exit
+
+# Power down Paperspace (optional):
+# - Use Paperspace web console, OR
+# - CLI: paperspace machines stop --machineId YOUR_MACHINE_ID
+```
+
+---
+
+## 🚨 Troubleshooting
+
+### SSH Connection Issues:
+```bash
+# Test SSH config:
+ssh -T paperspace
+
+# If connection fails, try direct connection:
+ssh -i ~/.ssh/GpuServerSSH paperspace@209.51.170.185
+```
+
+### Port Forwarding Issues:
+```bash
+# Check if ports are in use on Mac:
+lsof -i :9090
+lsof -i :8000
+lsof -i :3000
+lsof -i :24678
+
+# Kill processes if needed:
+kill -9 PID_NUMBER
+```
+
+### Docker Issues:
+```bash
+# Check Docker status:
+docker-compose ps
+docker-compose logs frontend
+docker-compose logs backend
+
+# Reset everything:
+docker-compose down
+docker-compose build --no-cache
+docker-compose up -d
+```
+
+### HMR Not Working:
+```bash
+# Check Vite connection in browser console:
+# Should see: "[vite] connected."
+# If not, restart frontend container:
+docker-compose restart frontend
+```
+
+---
+
+## 💡 Quick Tips
+
+- **Always use `docker-compose down && docker-compose build --no-cache && docker-compose up -d` after major changes**
+- **Keep console monitor running for the best development experience**
+- **If HMR stops working, restart the frontend container**
+- **SSH config automatically handles all port forwarding**
+- **Access the app via port 9090 (nginx) for full functionality**
+
+---
+
+## 📁 Key Files Reference
+
+- **SSH Config:** `~/.ssh/config` (on Mac)
+- **Docker Config:** `PROJECT/docker-compose.yml` (on Paperspace)
+- **Console Monitor:** `PROJECT/backend/monitor_console.py` (on Paperspace)
+- **Vite Config:** `PROJECT/frontend/vite.config.js` (on Paperspace)
+
+---
+
+**🎉 Happy Coding! Your development environment is optimized for seamless Mac ↔ Paperspace workflow!** 

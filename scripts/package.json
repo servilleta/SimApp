@@ -1,0 +1,12 @@
+{
+  "name": "browser-debugger",
+  "version": "1.0.0",
+  "description": "Chrome DevTools Protocol connector for streaming console logs",
+  "main": "browser-debugger.js",
+  "scripts": {
+    "start": "node browser-debugger.js"
+  },
+  "dependencies": {
+    "chrome-remote-interface": "^0.33.0"
+  }
+} 

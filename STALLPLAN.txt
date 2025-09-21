@@ -1,0 +1,124 @@
+# STALLPLAN – Consolidated Effort Log & Forward Strategy
+# Generated: 2025-08-07
+
+This document replaces the legacy `STALPLAN.txt`, `stallsolution.txt`, and `newstallplan.txt` with a **single, readable source of truth**.  It captures every major stream of work to date and proposes a **clean, test-driven roadmap** to finish the job.
+
+--------------------------------------------------------------------
+1.  Executive Snapshot
+--------------------------------------------------------------------
+•  **Bug:** Front-end progress bar freezes (0 % or 50-60 %) while backend continues.
+•  **Root Causes (plural):**
+   1. Batch-monitor task may never start → parent progress never updates.
+   2. GPU validation failures sometimes reported as “completed” (0 iterations).
+   3. WebSocket layer fragile – timing races, duplicate messages, missing deps.
+   4. Optimistic front-end placeholders mask missing real updates.
+•  **User Impact:** Perceived crash → cancelled jobs → lost confidence.
+
+--------------------------------------------------------------------
+2.  Timeline of Attempts (Key Milestones)
+--------------------------------------------------------------------
+| Year-Month | Phase(s)      | Focus                                         | Outcome |
+|------------|---------------|-----------------------------------------------|---------|
+| 2025-01    | 1-12          | Parent/child aggregation, WS reconnection     | Some progress – stall persists |
+| 2025-01    | 13-17         | Docker rebuild, WS deps (uvicorn[std], websockets) | Environment stable |
+| 2025-01    | 18-24         | GPU validation & console-log interference     | Fixed silent GPU fail + reduced WS delay |
+| 2025-01    | 25-28         | Network investigation, batch-monitor heartbeat| Identified task-not-running issue |
+| 2025-08    | 29-30         | Switch to REST polling prototype              | Prototype works but lacks child→parent aggregation |
+
+_Detail for historians has been archived in the old plan files & git history._
+
+--------------------------------------------------------------------
+3.  Current Baseline (HEAD vs 7f200116)
+--------------------------------------------------------------------
+• **HEAD (today):**  Front-end freezes at **0 %**; logs show batch-monitor missing.
+• **Commit 7f200116… (Jan 2025):**  Appeared “slightly better” – progress reached 50 % stall instead of 0 %; codebase far less mutated.
+
+_Action: spin up branch `restore/7f200116-baseline` to confirm behaviour and run tests._
+
+--------------------------------------------------------------------
+4.  Guiding Principles Going Forward
+--------------------------------------------------------------------
+1. **Fail Fast & Loud** – A failed GPU validation or task-startup must surface as `status: failed`, never `completed`.
+2. **One Delivery Path** – Choose EITHER WebSocket **or** REST polling, not both.
+3. **Single Source of Truth** – Redis `progress_store` is canonical; parent aggregation happens server-side.
+4. **Automated Safety Nets** – Pytest & Cypress guard rails before every merge.
+5. **Generic Excel Support** – No hard-coding, per user rule.
+
+--------------------------------------------------------------------
+5.  Proposed Clean-Room Roadmap
+--------------------------------------------------------------------
+Phase 0 – Reproduce & Smoke-Test (½ day)
+  • Checkout 7f200116 into a new branch.
+  • Add pytest smoke-test: upload small workbook → run 20 iterations → poll `/progress` → assert iterations > 0.
+  • Test must FAIL today – acts as red light.
+
+Phase 1 – GPU Validation Hardening (1 day)
+  • Add verbose stats logging in `ultra_engine`.
+  • Introduce `GPUValidationError` – bubble up & mark sim `failed`.
+
+Phase 2 – Batch-Monitor Reliability (¾ day)
+  • Move `monitor_batch_simulation` into FastAPI lifespan task-group.
+  • Emit heartbeat every 2 s; unit-test expects ≥3 heartbeats in 6 s.
+
+Phase 3 – Progress Transport Decision (½ day)
+  Option A – Stabilise WebSocket (keep existing code).
+  Option B – Adopt Robust Polling (as per `stallsolution.txt`).
+  _Decision gate: whichever path passes the smoke-test quickest._
+
+Phase 4 – Front-End Clean-Up (½ day)
+  • Remove optimistic placeholders; show spinner until real data arrives.
+  • Connect WS _before_ `POST /run` **or** start polling instantly on 202 Accepted.
+
+Phase 5 – CI & Regression Guard (½ day)
+  • Github Actions: build → pytest → (optional) Cypress headless.
+  • Any future stall re-introductions block merge.
+
+Phase 6 – Full Docker Rebuild & Acceptance (½ day)
+  • `docker compose build --no-cache && docker compose up -d`.
+  • Run large Excel (3 targets, 1000 iters) – should show smooth 0-100 %.
+
+Total estimated effort: **≈4 developer-days**.
+
+--------------------------------------------------------------------
+6.  Immediate To-Dos
+--------------------------------------------------------------------
+☐ Create `restore/7f200116-baseline` branch & run smoke-test.
+☐ Decide WebSocket vs Polling based on test results.
+☐ Allocate devs: Backend (Phases 1-2), Front-end (Phase 4), DevOps (Phase 5-6).
+
+--------------------------------------------------------------------
+Appendix A – Smoke-Test Template (pytest)
+--------------------------------------------------------------------
+```python
+from fastapi.testclient import TestClient
+from backend.main import app
+
+client = TestClient(app)
+
+def test_simulation_runs():
+    # 1. Upload small workbook (fixture)
+    files = {"file": ("test.xlsx", open("tests/fixtures/simple.xlsx", "rb"), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}
+    resp = client.post("/api/files/upload", files=files)
+    assert resp.status_code == 200
+    upload_id = resp.json()["file_id"]
+
+    # 2. Run simulation (10 iterations)
+    payload = {"file_id": upload_id, "target_cells": ["A1"], "iterations": 10, "engine": "ultra"}
+    run = client.post("/api/simulations/run", json=payload)
+    assert run.status_code == 202
+    sim_id = run.json()["simulation_id"]
+
+    # 3. Poll progress until finished
+    for _ in range(30):
+        progress = client.get(f"/api/simulations/progress/{sim_id}").json()
+        if progress["status"] in {"completed", "failed"}:
+            break
+        time.sleep(1)
+
+    assert progress["status"] == "completed"
+    assert progress["current_iteration"] > 0
+```
+
+--------------------------------------------------------------------
+End of STALLPLAN – keep this file as **single source of truth**; update sections 5 & 6 as tasks complete.
+

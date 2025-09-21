@@ -1,0 +1,73 @@
+Monte Carlo Platform – Engine Investigation Report (2025-06-12)
+===============================================================
+
+1. Symptom
+-----------
+• Simulations for **all engines** (Enhanced, Standard, Arrow) stopped almost
+  immediately with status *failed* and the frontend showed the error message:
+  
+     "Simulation execution error: setting an array element with a sequence.  
+     The requested array has an inhomogeneous shape after 1 dimensions.  
+     The detected shape was (2,) + inhomogeneous part."
+
+• Console + backend logs pointed to NumPy when trying to create an ndarray
+  from an object that was **not a 1-D numeric list**, but a **tuple that
+  contained the numeric results array *and* the iteration-error list**.
+
+2. Root cause
+--------------
+```
+WorldClassMonteCarloEngine.run_simulation(...) → returns
+    (results_array: np.ndarray, iteration_errors: List[str])
+
+service._run_enhanced_simulation(...) *and* _run_standard_simulation(...)
+    treated the returned value as if it were **just the array** and passed the
+    whole tuple straight into
+        simulation_engine._calculate_statistics(...)
+
+Inside _calculate_statistics NumPy attempted `np.isfinite(tuple)` → NumPy
+tried to coerce the heterogeneous tuple into an array → the exact error that
+bubbled up to the UI.
+```
+
+3. Fix
+-------
+• Patched `backend/simulation/service.py` in both helpers:
+  * `_run_enhanced_simulation`
+  * `_run_standard_simulation`
+
+  to **safely unpack** the return value:
+  ```python
+  if isinstance(raw_results, tuple):
+      results_array, iteration_errors = raw_results
+  else:
+      results_array, iteration_errors = raw_results, []
+  ```
+
+• Statistics are now computed with the *numeric* `results_array` only and the
+  captured `iteration_errors` are surfaced via
+  `SimulationResult.errors` so the frontend can display them if desired.
+
+4. Validation
+--------------
+After the patch:
+
+1. `docker-rebuild.sh` → fresh images built with `--no-cache`.
+2. Uploaded the same XLSX and ran simulations with each engine option.
+3. All engines now progress beyond 0 % → 100 %, returning meaningful mean/
+   std-dev values.
+4. No more NumPy "inhomogeneous shape" exceptions in backend logs.
+
+5. Recommendation & next steps
+------------------------------
+• The fix removes the immediate failure, but **iteration-errors list** may
+  still contain useful warnings (formula evaluation issues, etc.).
+  Consider displaying a non-blocking warning panel in the UI when this list is
+  non-empty.
+
+• Add a small unit-test that mocks the engine response `(np.array([1,2]), [])`
+  and verifies that `_run_enhanced_simulation` returns a valid `SimulationResult`.
+
+• Long-term: formalise the interface between service layer and engines – e.g.
+  always return a `SimulationEngineResult` dataclass so shape mistakes cannot
+  sneak in again. 

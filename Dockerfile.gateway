@@ -1,0 +1,32 @@
+# 🌐 Enterprise API Gateway Dockerfile
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY backend/requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy API Gateway code
+COPY backend/microservices/gateway/ ./microservices/gateway/
+COPY backend/microservices/event_bus.py ./microservices/
+
+# Set Python path
+ENV PYTHONPATH=/app:/app/microservices/gateway
+
+# Expose port
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/gateway/health || exit 1
+
+# Run API Gateway
+CMD ["python", "-m", "uvicorn", "microservices.gateway.api_gateway:app", "--host", "0.0.0.0", "--port", "8080"]

@@ -1,0 +1,204 @@
+# Progress Stalling Bug - Complete Requirements & Architecture Analysis
+
+## PLATFORM REQUIREMENTS & CHARACTERISTICS
+
+### 1. MONTE CARLO SIMULATION PLATFORM OVERVIEW
+- **Purpose**: Ultra-fast Monte Carlo simulation engine for Excel financial models
+- **Target**: Any Excel file model (not hardcoded to specific models)
+- **Engine**: Ultra Engine with GPU acceleration
+- **Performance**: 1000 iterations in ~1.9 seconds
+
+### 2. PARENT-CHILD ID ARCHITECTURE
+
+#### **Batch Simulation Structure**
+```
+PARENT ID: db549c71-ebe4-4fcd-9913-d1af2ef51b2c (Batch Container)
+├── CHILD 1: 4e1d1c60-ed48-4426-b374-c9a16473f5fe (Target E8)
+├── CHILD 2: ed70eba8-fea5-4f94-bfb0-00e9bb70d601 (Target F8) 
+└── CHILD 3: b2571f8b-5dfd-43ef-b802-583a88cd41d1 (Target G8)
+```
+
+#### **ID Mapping Flow**
+1. **Frontend generates TEMP IDs**: `temp_1754569523063_r2iie0bjt`
+2. **Backend creates PARENT ID**: Batch container for coordination
+3. **Backend creates CHILD IDs**: Individual simulation execution
+4. **Frontend tracks PARENT ID**: For progress monitoring
+5. **Child results fetched**: After parent completion
+
+#### **Progress Tracking Architecture**
+- **Primary**: WebSocket connection to PARENT ID for real-time updates
+- **Fallback**: HTTP polling to PARENT ID every 2 seconds
+- **Child Results**: Separate HTTP fetches after parent completion
+
+### 3. CRITICAL PLATFORM CHARACTERISTICS
+
+#### **Real-Time Requirements**
+- **User Expectation**: Visible progress indication (not necessarily real-time)
+- **Current Issue**: Progress appears frozen/stalled at random percentages
+- **Tolerance**: User just needs to know "something is happening"
+- **NOT Required**: Smooth real-time updates or sophisticated progress bars
+
+#### **Multi-Target Simulation**
+- **Batch Processing**: Multiple target cells (E8, F8, G8) in single request
+- **Parallel Execution**: All targets processed simultaneously
+- **Unified Progress**: Single progress bar for entire batch
+- **Individual Results**: Separate histograms/statistics per target
+
+#### **GPU Acceleration Context**
+- **Ultra Engine**: High-performance computation engine
+- **Fast Execution**: Simulations complete very quickly (1.9s for 1000 iterations)
+- **Progress Granularity**: May have limited intermediate progress points
+- **Completion Detection**: Backend knows when done, frontend must detect
+
+## CURRENT ARCHITECTURE COMPONENTS
+
+### 1. FRONTEND PROGRESS TRACKING
+```javascript
+Components:
+- UnifiedProgressTracker.jsx: Main progress coordination
+- progressManager.js: HTTP polling fallback
+- websocketService.js: Real-time WebSocket updates
+- simulationSlice.js: Redux state management
+
+Flow:
+Frontend → WebSocket Connection → Backend Progress → UI Update
+       ↳ HTTP Polling Fallback → Backend API → UI Update
+```
+
+### 2. BACKEND PROGRESS REPORTING
+```python
+Components:
+- Ultra Engine: Actual simulation execution
+- WebSocket Server: Real-time progress broadcasting
+- Progress API: HTTP endpoint for status queries
+- Batch Coordination: Parent-child relationship management
+
+Flow:
+Ultra Engine → Progress Updates → WebSocket Broadcast → Frontend
+            ↳ Progress Storage → HTTP API → Frontend Polling
+```
+
+### 3. KNOWN ARCHITECTURAL ISSUES
+
+#### **WebSocket Connection Failures**
+- **Pattern**: Repeated connection failures with code 1006
+- **Symptom**: "WebSocket connection failed" every 500ms-8000ms
+- **Impact**: Frontend falls back to HTTP polling only
+- **Root Cause**: WebSocket server may not be properly handling batch simulations
+
+#### **Progress Percentage Inconsistencies**
+- **Backend Reports**: 0% progress, 0 current_iteration, 0 total_iterations
+- **Frontend Calculates**: 35% based on batch variable completion estimates
+- **Disconnect**: Backend progress not reflecting actual simulation state
+- **Result**: UI shows artificial progress, not real backend progress
+
+#### **Timing Race Conditions**
+- **Fast Completion**: Simulation finishes before progress updates propagate
+- **WebSocket Lag**: Connection established after simulation already completed
+- **Polling Delay**: 2-second intervals miss quick completions
+- **UI State**: Progress tracker doesn't detect rapid completion
+
+### 4. USER EXPERIENCE REQUIREMENTS
+
+#### **Minimum Acceptable UX**
+- **Progress Indication**: Some visual feedback that work is happening
+- **Time Estimation**: Rough idea of elapsed time
+- **Completion Detection**: Clear indication when results are ready
+- **Error Handling**: Clear messaging if something fails
+
+#### **NOT Required (Simplified)**
+- **Real-time smooth progress**: Step-by-step percentage updates
+- **Precise time estimates**: Exact completion time predictions
+- **Sophisticated animations**: Complex progress visualizations
+- **WebSocket real-time**: Can rely on polling if simpler
+
+## TECHNICAL CONSTRAINTS & CONTEXT
+
+### 1. DOCKER ENVIRONMENT
+- **Container Architecture**: Frontend, Backend, Nginx, Redis, PostgreSQL
+- **Network**: Internal container networking
+- **WebSocket Proxy**: Nginx handling WebSocket upgrades
+- **Port Configuration**: 9090 for backend API/WebSocket
+
+### 2. ULTRA ENGINE CHARACTERISTICS
+- **Execution Speed**: Extremely fast (1.9s for 1000 iterations)
+- **Progress Granularity**: May have limited intermediate checkpoints
+- **GPU Utilization**: Optimal performance with current setup
+- **Batch Processing**: Handles multiple targets efficiently
+
+### 3. CURRENT ROLLBACK CONTEXT
+- **Previous Attempts**: Multiple WebSocket improvements tried
+- **Rollback Status**: Currently on restore/7f200116-baseline
+- **Working Features**: Simulation execution, results generation, percentage UI
+- **Broken Feature**: Only progress indication during execution
+
+## SIMPLIFICATION OPPORTUNITIES
+
+### 1. POLLING-ONLY APPROACH
+- **Eliminate WebSockets**: Remove complex real-time connection layer
+- **HTTP Polling**: Simple, reliable, easier to debug
+- **Frequency**: Adjust polling interval based on expected completion time
+
+### 2. PROGRESS ESTIMATION
+- **Time-Based**: Show elapsed time instead of percentage
+- **State-Based**: Simple states (Queued → Running → Completed)
+- **Pulse Indicator**: Simple "working" animation without percentages
+
+### 3. CPU WORKER MONITORING
+- **Dedicated Monitor**: Reserve one CPU worker for progress updates
+- **Isolated Tracking**: Progress monitoring separate from simulation execution
+- **Simplified Reporting**: Regular heartbeat updates to frontend
+
+## PROGRESS STALL ROOT CAUSE EVOLUTION - UPDATED JAN 2025
+
+### ✅ PHASE 1: AUTHENTICATION ISSUE (RESOLVED)
+**Previous Root Cause**: Auth0 token validation failure preventing simulation requests
+**Status**: FIXED ✅
+- Authentication system working correctly
+- Simulations successfully reaching backend
+- Backend logs showing proper PHASE29 simulation creation
+- Parent-child architecture functioning as designed
+
+### 🔧 PHASE 2: PROGRESS TRACKING OPTIMIZATION (IN PROGRESS)
+
+#### **NEW ROOT CAUSE IDENTIFIED**: Progress Update Frequency vs User Expectations
+
+After fixing authentication, simulations work perfectly but progress updates are not smooth enough for user expectations.
+
+#### **Current Status Analysis** (Jan 2025):
+- ✅ **Simulations Execute Correctly**: Backend logs show proper execution (2m 51s completion)
+- ✅ **Progress Data Available**: Backend reports accurate progress (`42% → 62% → 85% → 100%`)
+- ✅ **Fast Completion Detection**: `🎉 FAST COMPLETION: All 3 children are 100% complete`
+- ✅ **Polling Cleanup**: Elapsed timer stops correctly, no infinite logging
+- ❌ **Smooth Progress**: Still shows large jumps (`42% → 62%` instead of gradual updates)
+
+#### **Core Issue**: BACKEND PROGRESS GRANULARITY vs FRONTEND POLLING
+1. **Backend Progress Calculation**: Parent simulation aggregates child progress every 2 seconds
+2. **Frontend Polling**: Now optimized to 500ms intervals  
+3. **Gap**: Frontend polls 4x faster than backend calculates new progress
+4. **Result**: Same progress value returned for multiple frontend polls = perceived stalls
+
+#### **Technical Evidence** (Latest Test):
+```bash
+Backend Timeline:
+- 20:24:47: Child completion detection
+- 20:24:49: Parent progress calculation (95% → 100%)
+- 20:24:49: Batch monitor completion
+
+Frontend Timeline (500ms polling):
+- Multiple polls showing same 42% for ~20 seconds
+- Jump to 62% after backend recalculation
+- Multiple polls showing same 62% for ~15 seconds  
+- Jump to 85%, then 100%
+```
+
+### NEW ROOT CAUSE: BACKEND PROGRESS CALCULATION FREQUENCY
+
+**Issue**: Backend `monitor_batch_simulation` runs every 2 seconds, but calculation is expensive
+**Impact**: Frontend polls 4x faster than backend updates, creating perceived stalls
+**Evidence**: Console logs showing same progress values for multiple consecutive polls
+
+### REMAINING TECHNICAL ISSUES:
+1. **Backend Monitoring Frequency**: 2-second intervals too slow for smooth UX
+2. **Progress Interpolation**: Frontend needs better smoothing between actual updates
+3. **Real-time Granularity**: Ultra engine reports iteration-level progress not reflected in parent

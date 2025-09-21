@@ -1,0 +1,92 @@
+# Monte Carlo Platform – Progress Reporting Fix Plan
+
+## 0. TL;DR
+Switch to **one simulation-ID** per run, emit canonical progress JSON, poll `/progress` every second, trust the percentage, explode `multi_target_result` on the frontend. 90 % of the code is already prepared – just enforce the contract and remove the last traces of the legacy batch-child logic.
+
+---
+
+## 1. Backend Contract (must-have)
+1. `POST /api/simulations/run` →
+   ```json
+   { "simulation_id": "UUID", "status": "running" }
+   ```
+2. `GET /api/simulations/{id}/progress` (1 s cadence) →
+   ```json
+   {
+     "simulation_id": "UUID",
+     "status": "running",               // or completed / failed / not_found
+     "progress_percentage": 37.4,        // 0-100, authoritative
+     "stage": "simulation",             // one of 5 stages
+     "current_iteration": 377,
+     "total_iterations": 1000,
+     "target_count": 3                   // optional but nice
+   }
+   ```
+3. On completion `GET /api/simulations/{id}` →
+   ```json
+   {
+     "simulation_id": "UUID",
+     "status": "completed",
+     "multi_target_result": {
+       "total_iterations": 1000,
+       "statistics": { "I6": { … }, "J6": { … }, "K6": { … } },
+       "sensitivity_data": { "I6": [...], "J6": [...] }
+     }
+   }
+   ```
+
+**Important:** Do **NOT** return `batch_simulation_ids` for the Ultra engine anymore.
+
+---
+
+## 2. Frontend Checklist (already coded, just verify)
+1. `simulationSlice.js`
+   • When no `batch_simulation_ids` are present it enters the *single-sim* branch and stores `currentSimulationId`.
+   • On `fetchSimulationStatus.fulfilled` it explodes `multi_target_result` into `multipleResults` for UI consumption.
+
+2. `useSimulationPolling.js`
+   • Polls `/progress` every 1 s, stops when `progress_percentage ≥ 100` or status ∈ {completed, success, not_found}. 
+   • Fetches final results once.
+
+3. `UnifiedProgressTracker.jsx`
+   • Receives one parent ID, calls the polling hook, paints bar/phase grid.
+   • Skips all child-polling paths when `simulationIds.length === 1 && targetVariables.length > 1`.
+
+4. `SimulationResultsDisplay.jsx` (or equivalent results component)
+   • Reads `state.simulation.multipleResults` (populated by slice) – works after step 1.
+
+---
+
+## 3. Early-Progress UX (optional, backend only)
+Emit tiny percentages for the first three stages so the bar moves immediately:
+* initialization → 1 %, 3 %, 5 %
+* parsing → 8 %, 12 %, 16 %, 20 %
+* analysis → 21 %, 24 %
+After 25 % the simulation loop updates every ≤ 0.5 s or ≤ 0.5 %.
+No frontend change needed – it trusts the number.
+
+---
+
+## 4. Validation Steps
+1. Rebuild containers: `docker compose build --no-cache && docker compose up -d`.
+2. Run a 3-target Ultra simulation.
+3. Browser DevTools → Network:
+   • One POST `/run` → one UUID.
+   • 1 Hz GET `/progress`.
+4. Console: `[SIMPLE_POLLING] RAW RESPONSE … progress_percentage: 1,2,…`.
+5. UI: bar moves each second; variables count = 3.
+6. At 100 % polling stops; Redux receives `completed`; results render.
+
+If any step fails, cross-check the contract in section 1 – a field is almost certainly missing or wrong.
+
+---
+
+## 5. Roll-back & Guardrails
+* Keep stale-data protection (≤ 1 h age) in `get_simulation_status_or_results`.
+* Frontend hook already authenticates the final results fetch – backend must accept the token or remove auth.
+* If progress freezes, confirm backend still emits numbers and that only **one** interval exists (console logs show interval ID).
+
+---
+
+## 6. Done ✓
+Once contract is enforced and containers rebuilt, the new single-ID progress tracker works out-of-the-box with smooth updates and correct results display.
