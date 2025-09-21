@@ -9,7 +9,7 @@ import {
 import { useDispatch } from 'react-redux';
 import { updateSimulationProgress } from '../store/simulationSlice'; // Assume this action exists or add it
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:9090/api';
 const SIMULATION_API_URL = `${API_BASE_URL}/simulations`;
 
 // Function to get fresh Auth0 token with optimized strategy
@@ -58,6 +58,17 @@ const getAuth0Token = async () => {
       return token;
     } catch (error) {
       console.error('🚨 AUTH ERROR - Auth0 token refresh failed:', error);
+      
+      // Check if this is a "Missing Refresh Token" error
+      if (error.message && error.message.includes('Missing Refresh Token')) {
+        console.warn('🔄 Missing refresh token detected in simulation service - triggering fresh login...');
+        
+        // Clear tokens and trigger logout
+        localStorage.removeItem('authToken');
+        window.dispatchEvent(new CustomEvent('auth0-logout'));
+        
+        throw new Error('Authentication session expired. Please log in again.');
+      }
       
       // STEP 3: Final fallback to localStorage (even if expired)
       if (existingToken) {

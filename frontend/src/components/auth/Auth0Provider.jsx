@@ -139,6 +139,24 @@ function Auth0StateSync() {
           
         } catch (error) {
           console.error('Error getting access token:', error);
+          
+          // Check if this is a "Missing Refresh Token" error
+          if (error.message && error.message.includes('Missing Refresh Token')) {
+            console.warn('🔄 Missing refresh token detected - forcing fresh login...');
+            
+            // Clear any existing Auth0 cache and tokens
+            localStorage.removeItem('authToken');
+            localStorage.clear(); // Clear all localStorage to remove Auth0 cache
+            
+            // Force logout and redirect to login
+            auth0Logout({
+              logoutParams: {
+                returnTo: window.location.origin + '/login'
+              }
+            });
+            return;
+          }
+          
           dispatch(logoutUser());
         }
       } else if (!isAuthenticated && !isLoading) {
