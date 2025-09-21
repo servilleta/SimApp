@@ -69,8 +69,8 @@ class Settings(BaseSettings):
     AUTH0_MANAGEMENT_AUDIENCE: str = "https://dev-jw6k27f0v5tcgl56.eu.auth0.com/api/v2/"
     
     # Auth0 Frontend settings (support both domain and IP)
-    AUTH0_CALLBACK_URL: str = "https://simapp.ai/callback,https://209.51.170.185/callback"
-    AUTH0_LOGOUT_URL: str = "https://simapp.ai,https://209.51.170.185"
+    AUTH0_CALLBACK_URL: str = "https://simapp.ai/callback,http://localhost:9090/callback,http://64.71.146.187:9090/callback"
+    AUTH0_LOGOUT_URL: str = "https://simapp.ai,http://localhost:9090,http://64.71.146.187:9090"
     
     # Stripe Payment settings
     STRIPE_PUBLISHABLE_KEY: str = Field(default="", env="STRIPE_PUBLISHABLE_KEY")

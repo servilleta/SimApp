@@ -50,7 +50,7 @@ function Auth0StateSync() {
           // Fetch actual user profile from backend (includes admin status)
           try {
             // Use the correct API base URL to avoid CORS issues during Auth0 redirect
-            const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+            const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:9090/api';
             const profileUrl = `${apiBaseUrl}/auth0/profile`;
             
             const response = await fetch(profileUrl, {
