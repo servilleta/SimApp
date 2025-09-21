@@ -14,6 +14,9 @@ services:
     environment:
       - NODE_ENV=development
       - VITE_API_URL=http://localhost:9090/api
+      - VITE_AUTH0_DOMAIN=dev-jw6k27f0v5tcgl56.eu.auth0.com
+      - VITE_AUTH0_CLIENT_ID=UDXorRodTlUmgkigfaWW81Rr40gKpeAJ
+      - VITE_AUTH0_AUDIENCE=https://simapp.ai/api
     networks:
       - app-network
 
