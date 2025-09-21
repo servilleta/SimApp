@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simapp-simulation-engine
+  namespace: simapp-production
+  labels:
+    app: simapp-simulation-engine
+    tier: compute
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: simapp-simulation-engine
+  template:
+    metadata:
+      labels:
+        app: simapp-simulation-engine
+        tier: compute
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      containers:
+      - name: simulation-engine
+        image: simapp_backend:latest
+        imagePullPolicy: Never
+        command: ["python3", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+        ports:
+        - containerPort: 8000
+        env:
+        - name: WORKER_MODE
+          value: "simulation"
+        - name: DATABASE_URL
+          value: "postgresql://simapp_user:simapp_password_secure_2024@postgresql-service:5432/simapp_db"
+        - name: REDIS_URL
+          value: "redis://redis-service:6379/0"
+        - name: USE_GPU
+          value: "true"
+        - name: MAX_ITERATIONS
+          value: "10000000"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        # GPU resources (uncomment when GPU nodes are available)
+        # resources:
+        #   limits:
+        #     nvidia.com/gpu: 1
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - simapp-simulation-engine
+              topologyKey: kubernetes.io/hostname
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: simapp-simulation-service
+  namespace: simapp-production
+spec:
+  selector:
+    app: simapp-simulation-engine
+  ports:
+  - port: 8000
+    targetPort: 8000
+  type: ClusterIP

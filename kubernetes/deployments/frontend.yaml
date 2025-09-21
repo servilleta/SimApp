@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simapp-frontend
+  namespace: simapp-production
+  labels:
+    app: simapp-frontend
+    tier: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: simapp-frontend
+  template:
+    metadata:
+      labels:
+        app: simapp-frontend
+        tier: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: simapp_frontend:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3000
+        env:
+        - name: VITE_API_URL
+          value: "http://nginx-ingress-service:9090/api"
+        - name: VITE_AUTH0_DOMAIN
+          value: "dev-jw6k27f0v5tcgl56.eu.auth0.com"
+        - name: VITE_AUTH0_CLIENT_ID
+          value: "UDXorRodTlUmgkigfaWW81Rr40gKpeAJ"
+        - name: VITE_AUTH0_AUDIENCE
+          value: "https://simapp.ai/api"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "250m"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 60
+          periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: simapp-frontend-service
+  namespace: simapp-production
+spec:
+  selector:
+    app: simapp-frontend
+  ports:
+  - port: 3000
+    targetPort: 3000
+  type: ClusterIP

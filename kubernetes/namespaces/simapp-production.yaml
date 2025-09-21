@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: simapp-production
+  labels:
+    name: simapp-production
+    environment: production
+    app: simapp
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: simapp-staging
+  labels:
+    name: simapp-staging
+    environment: staging
+    app: simapp

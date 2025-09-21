@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simapp-backend
+  namespace: simapp-production
+  labels:
+    app: simapp-backend
+    tier: api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: simapp-backend
+  template:
+    metadata:
+      labels:
+        app: simapp-backend
+        tier: api
+    spec:
+      containers:
+      - name: backend
+        image: simapp_backend:latest
+        imagePullPolicy: Never  # Use locally built image
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://simapp_user:simapp_password_secure_2024@postgresql-service:5432/simapp_db"
+        - name: REDIS_URL
+          value: "redis://redis-service:6379/0"
+        - name: AUTH0_DOMAIN
+          value: "dev-jw6k27f0v5tcgl56.eu.auth0.com"
+        - name: AUTH0_CLIENT_ID
+          value: "UDXorRodTlUmgkigfaWW81Rr40gKpeAJ"
+        - name: AUTH0_AUDIENCE
+          value: "https://simapp.ai/api"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: simapp-backend-service
+  namespace: simapp-production
+spec:
+  selector:
+    app: simapp-backend
+  ports:
+  - port: 8000
+    targetPort: 8000
+  type: ClusterIP
