@@ -1,18 +1,29 @@
-# Monte Carlo Simulation Web Platform
+# SimApp - Monte Carlo Simulation Platform
 
-A web-based platform for running Monte Carlo simulations with Excel data integration and GPU acceleration.
+A comprehensive Monte Carlo simulation platform for financial modeling and risk analysis, designed to work with any kind of Excel file model without hard-coding specific structures.
+
+## Project Overview
+
+SimApp is an ultra-engine Monte Carlo simulation platform that provides a robust, scalable solution for running simulations on Excel-based models. This platform is specifically designed to work with any kind of Excel file model, making it truly universal for Monte Carlo simulations.
+
+## Git Branch Structure
+
+- **development**: Active development branch with latest features and updates
+- **staging**: Pre-production testing branch for validation  
+- **production**: Stable production-ready code
+- **master**: Main branch (legacy, use production for releases)
 
 ## Project Structure
 
 ```
-PROJECT/
-├── backend/                 # FastAPI backend
+SimApp/
+├── backend/                 # FastAPI backend with ultra-engine
 │   ├── auth/               # Authentication module
-│   ├── excel_parser/       # Excel file processing
-│   ├── simulation/         # Simulation engine
-│   ├── results/           # Results processing
-│   └── gpu/               # GPU acceleration
-└── frontend/              # React frontend
+│   ├── excel_parser/       # Universal Excel file processing
+│   ├── simulation/         # Ultra simulation engine
+│   ├── results/           # Results processing and analytics
+│   └── gpu/               # GPU acceleration support
+└── frontend/              # Modern React frontend
     ├── public/            # Static assets
     └── src/               # Source code
         ├── components/    # React components
