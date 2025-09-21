@@ -514,6 +514,42 @@ async def get_simulation_status_or_results(simulation_id: str) -> Optional[Simul
     except Exception as e:
         logger.error(f"📦 [DATABASE_FALLBACK] Error accessing database for {simulation_id}: {e}")
     
+    # 🚀 FINAL FALLBACK: Check progress store for running simulations
+    logger.info(f"🔍 [PROGRESS_FALLBACK] Checking progress store for running simulation: {simulation_id}")
+    try:
+        from shared.progress_store import get_progress
+        progress_data = get_progress(simulation_id)
+        
+        if progress_data:
+            logger.info(f"🔍 [PROGRESS_FALLBACK] Found progress data for {simulation_id}: {progress_data.get('progress_percentage', 'N/A')}%")
+            
+            # Create a minimal SimulationResponse from progress data
+            from .schemas import SimulationResponse
+            from datetime import datetime, timezone
+            
+            response = SimulationResponse(
+                simulation_id=simulation_id,
+                status=progress_data.get('status', 'running'),
+                progress=progress_data.get('progress_percentage', 0),
+                message=progress_data.get('stage_description', 'Simulation in progress'),
+                created_at=progress_data.get('start_time', datetime.now(timezone.utc).isoformat()),
+                updated_at=datetime.now(timezone.utc).isoformat(),
+                file_id=progress_data.get('file_id'),
+                engine_type=progress_data.get('engine_type'),
+                iterations=progress_data.get('total_iterations'),
+                variables_config=None,  # Not available in progress data
+                results=None,  # No results yet
+                multi_target_result=None  # No results yet
+            )
+            
+            logger.info(f"🔍 [PROGRESS_FALLBACK] Created SimulationResponse from progress data for {simulation_id}")
+            return response
+        else:
+            logger.info(f"🔍 [PROGRESS_FALLBACK] No progress data found for {simulation_id}")
+            
+    except Exception as e:
+        logger.error(f"🔍 [PROGRESS_FALLBACK] Error checking progress store for {simulation_id}: {e}")
+    
     return None
 
 async def cancel_simulation_task(simulation_id: str) -> Dict[str, any]:
@@ -1378,28 +1414,60 @@ async def _run_ultra_multi_target_simulation(
     iterations: int
 ) -> None:
     """Run multi-target simulation using Ultra engine"""
+    from shared.progress_store import get_progress  # Import at function scope to avoid shadowing
     logger.info(f"🎯 [ULTRA_MULTI_TARGET] Starting {sim_id} with {len(target_cells)} targets")
     
     try:
-        # ✅ INITIALIZATION: Set initial progress with target count
-        update_simulation_progress(sim_id, {
-            "status": "running",
-            "progress_percentage": 0,
-            "stage": "initialization", 
-            "stage_description": f"Starting multi-target simulation for {len(target_cells)} targets",
-            "target_count": len(target_cells),  # ✅ CRITICAL: Set target count from beginning
-            "engine_type": "ultra",
-            "gpu_acceleration": True
-        })
+        # ✅ INITIALIZATION: Set initial progress with target count - ONLY at start, don't override engine progress
+        # 🚀 CRITICAL FIX: Only set initial progress if no progress exists yet (prevents overriding Ultra engine progress)
+        existing_progress = get_progress(sim_id) or {}
+        # ULTRA-CRITICAL FIX: Check both progress_percentage AND stage to prevent resetting active simulations
+        # When progress is temporarily unavailable, don't reset to 0 if simulation already started
+        if existing_progress.get('progress_percentage', 0) == 0 and existing_progress.get('stage', 'queued') == 'queued':
+            update_simulation_progress(sim_id, {
+                "status": "running",
+                "progress_percentage": 0,
+                "stage": "initialization", 
+                "stage_description": f"Starting multi-target simulation for {len(target_cells)} targets",
+                "target_count": len(target_cells),  # ✅ CRITICAL: Set target count from beginning
+                "engine_type": "ultra",
+                "gpu_acceleration": True
+            })
+        else:
+            # Don't override existing progress - just update metadata
+            logger.info(f"🚀 [PROGRESS_PRESERVATION] Preserving existing {existing_progress.get('progress_percentage', 0)}% progress for {sim_id}")
+            update_simulation_progress(sim_id, {
+                "status": "running",
+                "stage": "initialization", 
+                "stage_description": f"Starting multi-target simulation for {len(target_cells)} targets",
+                "target_count": len(target_cells),
+                "engine_type": "ultra",
+                "gpu_acceleration": True
+                # NOTE: No progress_percentage - preserve existing
+            })
         
-        # 📊 STEP 1: Excel File Loading
-        update_simulation_progress(sim_id, {
-            "progress_percentage": 2,
-            "stage": "excel_loading",
-            "stage_description": "📊 Loading Excel file and validating structure",
-            "target_count": len(target_cells),
-            "current_step": "file_validation"
-        })
+        # 📊 STEP 1: Excel File Loading - Don't override Ultra engine progress
+        # 🚀 CRITICAL FIX: Only set early progress if simulation hasn't progressed yet
+        current_progress = get_progress(sim_id) or {}
+        current_pct = current_progress.get('progress_percentage', 0)
+        if current_pct <= 2:
+            update_simulation_progress(sim_id, {
+                "progress_percentage": 2,
+                "stage": "excel_loading",
+                "stage_description": "📊 Loading Excel file and validating structure",
+                "target_count": len(target_cells),
+                "current_step": "file_validation"
+            })
+        else:
+            # Ultra engine has already progressed - just update stage info without changing percentage
+            logger.info(f"🚀 [PROGRESS_PRESERVATION] Ultra engine at {current_pct}% - skipping 2% override for {sim_id}")
+            update_simulation_progress(sim_id, {
+                "stage": "excel_loading",
+                "stage_description": "📊 Loading Excel file and validating structure",
+                "target_count": len(target_cells),
+                "current_step": "file_validation"
+                # NOTE: No progress_percentage - preserve Ultra engine progress
+            })
         
         # Import the Ultra engine
         from simulation.engines.ultra_engine import create_ultra_engine

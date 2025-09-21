@@ -1462,16 +1462,11 @@ class UltraMonteCarloEngine:
                 logger.debug(f"🔧 [ULTRA] Could not set target_cell in progress: {e}")
         
         try:
-            # Phase 1: Progress update - Starting
+            # SIMPLIFIED: Only essential progress updates
             self._update_progress(0, "Initializing Ultra Engine", stage="initialization")
             
-            # Phase 2: Random generation with smooth progress (0-20%)
-            self._update_progress(2, "Preparing Random Number Generation", stage="initialization")
             random_values = await self._generate_random_numbers(mc_input_configs)
-            self._update_progress(20, "Random Number Generation Complete", stage="parsing")
-            
-            # Phase 3: Formula evaluation with smooth progress (20-85%)
-            self._update_progress(25, "Starting Formula Evaluation", stage="analysis")
+            self._update_progress(25, "Starting Monte Carlo Simulation", stage="simulation")
             
             results = []
             last_progress_time = time.time()  # Track time since last progress update
@@ -1487,10 +1482,7 @@ class UltraMonteCarloEngine:
                 b_end = min(b_start + batch_size, iterations)
                 b_n = b_end - b_start
 
-                # 🔥 FIX: Add batch start progress update
-                batch_start_progress = 25 + (b_start / iterations) * 60
-                self._update_progress(batch_start_progress, f"Starting batch {batch_idx + 1}/{num_batches} (iterations {b_start + 1}-{b_end})", 
-                                    current_iteration=b_start, stage="simulation")
+                # SIMPLIFIED: No batch progress updates
 
                 # Build device/host buffers per batch
                 current_values_batch: Dict[Tuple[str, str], Any] = {}
@@ -1507,14 +1499,7 @@ class UltraMonteCarloEngine:
                 # Evaluate dependency steps on the batch
                 total_formula_steps = len(ordered_calc_steps)
                 for step_idx, (sheet, cell, formula) in enumerate(ordered_calc_steps):
-                    # 🔥 FIX: Add progress updates during formula evaluation (every 25% of formulas)
-                    if total_formula_steps > 4 and step_idx % max(1, total_formula_steps // 4) == 0:
-                        formula_progress_within_batch = (step_idx / total_formula_steps) * 100
-                        overall_batch_progress = batch_start_progress + (formula_progress_within_batch / 100) * (60 / num_batches)
-                        current_iter_estimate = b_start + int((step_idx / total_formula_steps) * b_n)
-                        self._update_progress(overall_batch_progress, 
-                                            f"Batch {batch_idx + 1}/{num_batches}: Formula {step_idx + 1}/{total_formula_steps} ({formula_progress_within_batch:.1f}%)", 
-                                            current_iteration=current_iter_estimate, stage="simulation")
+                    # SIMPLIFIED: No formula-level progress updates
                     
                     try:
                         from simulation.engine import _safe_excel_eval, SAFE_EVAL_NAMESPACE
@@ -1921,187 +1906,71 @@ class UltraMonteCarloEngine:
             raise RuntimeError(f"ULTRA ENGINE FALLBACK FAILURE: {error_msg}") from e
     
     def _update_progress(self, percentage: float, stage_description: str, current_iteration: int = None, stage: str = None):
-        """Update progress with real-time callbacks - ENHANCED with proper stage mapping and frequency control"""
+        """Update progress with simple, reliable callbacks - SIMPLIFIED based on working engine approach"""
         
-        # Add frequency control to prevent too frequent updates
-        current_time = time.time()
-        if not hasattr(self, '_last_progress_update'):
-            self._last_progress_update = 0
-            self._progress_update_count = 0
+        # SIMPLIFIED: Use simple frequency control like the working engine
+        if not hasattr(self, '_last_progress_percentage'):
+            self._last_progress_percentage = -1
         
-        # Enhanced frequency control: ensure progress increments during heavy loops every 1-2 seconds
-        time_since_last = current_time - self._last_progress_update
-        if hasattr(self, '_last_progress_percentage'):
-            progress_change = abs(percentage - self._last_progress_percentage)
-        else:
-            progress_change = 100  # Force first update
-            
-        # More aggressive update frequency for better real-time feedback (1-2 second intervals)
-        should_update = (time_since_last >= 1.0) or (progress_change >= 3.0) or (percentage >= 100) or (percentage == 0) or (time_since_last >= 2.0)
-        
-        self._progress_update_count += 1
-        
-        logger.info(f"🔍 [ULTRA] _update_progress called: {percentage}% - {stage_description} (stage: {stage})")
-        logger.info(f"🔍 [ULTRA] Update #{self._progress_update_count}, time_since_last: {time_since_last:.1f}s, progress_change: {progress_change:.1f}%, should_update: {should_update}")
-        logger.info(f"🔍 [ULTRA] progress_callback exists: {self.progress_callback is not None}")
+        # PROVEN APPROACH: Only update every 1% or at key milestones
+        progress_change = abs(percentage - self._last_progress_percentage)
+        should_update = (progress_change >= 1.0) or (percentage >= 100) or (percentage == 0)
         
         if not should_update:
-            logger.debug(f"🔍 [ULTRA] Skipping progress update due to frequency control")
             return
             
-        self._last_progress_update = current_time
         self._last_progress_percentage = percentage
         
         if self.progress_callback:
             try:
-                # Get start time if available
-                start_time = None
-                if hasattr(self, 'simulation_id') and self.simulation_id:
-                    try:
-                        from simulation.service import SIMULATION_START_TIMES
-                        start_time = SIMULATION_START_TIMES.get(self.simulation_id)
-                    except Exception:
-                        pass
+                # SIMPLIFIED: Use minimal progress data like the working engine
+                percentage = max(0.0, min(100.0, float(percentage)))
+                if current_iteration is not None:
+                    current_iteration = max(0, int(current_iteration))
                 
-                # CRITICAL FIX: Preserve existing metadata from progress store
-                existing_progress = {}
-                if hasattr(self, 'simulation_id') and self.simulation_id:
-                    try:
-                        from shared.progress_store import get_progress
-                        existing_progress = get_progress(self.simulation_id) or {}
-                    except Exception as e:
-                        logger.debug(f"🔧 [ULTRA] Could not get existing progress: {e}")
-                
-                # ✅ STAGE MAPPING: Determine appropriate stage based on percentage
+                # Simple stage mapping
                 if stage is None:
-                    if percentage < 5:
+                    if percentage < 25:
                         stage = "initialization"
-                    elif percentage < 20:
-                        stage = "parsing"
-                    elif percentage < 25:
-                        stage = "analysis"
                     elif percentage < 85:
                         stage = "simulation"
                     else:
                         stage = "results"
                 
-                # Validate progress values
-                percentage = max(0.0, min(100.0, float(percentage)))
-                if current_iteration is not None:
-                    current_iteration = max(0, int(current_iteration))
-                
-                # Calculate timing information
-                timing_info = {
-                    "update_frequency": f"{time_since_last:.1f}s",
-                    "updates_sent": self._progress_update_count,
-                    "progress_rate": f"{progress_change/max(time_since_last, 0.1):.2f}%/s" if time_since_last > 0 else "N/A"
-                }
-                
-                # Build progress data with preserved metadata and target count
+                # PROVEN SIMPLE STRUCTURE - exactly like working engine
                 progress_data = {
                     "status": "running",
                     "progress_percentage": percentage,
-                    "stage": stage,  # ✅ USE PROPER STAGE
-                    "stage_description": stage_description,
-                    "engine": "UltraMonteCarloEngine",
-                    "engine_type": "ultra",  # CRITICAL: Set engine_type for persistence
-                    "gpu_acceleration": CUDA_AVAILABLE,
-                    "timestamp": current_time,
+                    "current_iteration": current_iteration or 0,
                     "total_iterations": self.iterations,
-                    "target_count": getattr(self, '_current_target_count', 1),  # ✅ ADD: Target count for frontend
-                    "heartbeat": True,  # ✅ ADD: Indicate this is a heartbeat update
-                    "timing_info": timing_info  # Add timing diagnostics
+                    "stage": stage_description,  # Use description as stage like working engine
+                    "timestamp": time.time()
                 }
                 
-                # Add current iteration if provided
-                if current_iteration is not None:
-                    progress_data["current_iteration"] = current_iteration
+                # SIMPLIFIED: Just call the callback like the working engine
+                logger.debug(f"🔍 [ULTRA] Progress: {percentage:.1f}% - {stage_description}")
                 
-                # Add start time if available
-                if start_time:
-                    progress_data["start_time"] = start_time
-                
-                # CRITICAL FIX: Preserve existing metadata fields needed for persistence
-                preserve_fields = [
-                    "user", "original_filename", "file_id", "target_variables", 
-                    "simulation_id", "variables", "target_cell"
-                ]
-                
-                for field in preserve_fields:
-                    if field in existing_progress and existing_progress[field] is not None:
-                        progress_data[field] = existing_progress[field]
-                
-                # ENHANCED: Try to populate missing critical fields if we have simulation context
-                if hasattr(self, 'simulation_id') and self.simulation_id:
-                    # Set target_cell if we have it and it's missing
-                    if "target_cell" not in progress_data and hasattr(self, '_target_cell'):
-                        progress_data["target_cell"] = self._target_cell
-                
-                # Rate-limited logging: only log every 10 seconds for detailed progress info
-                if not hasattr(self, '_last_detailed_log_time'):
-                    self._last_detailed_log_time = 0
-                
-                time_since_detailed_log = current_time - self._last_detailed_log_time
-                if time_since_detailed_log >= 10.0 or percentage >= 100 or percentage == 0:
-                    logger.info(f"🔍 [ULTRA] Progress update: {percentage:.1f}% - {stage_description}")
-                    logger.info(f"🔍 [ULTRA] Engine: {progress_data.get('engine_type', 'UNKNOWN')}, Target: {progress_data.get('target_cell', 'UNKNOWN')}")
-                    logger.info(f"🔍 [ULTRA] Timing: {timing_info}")
-                    self._last_detailed_log_time = current_time
-                else:
-                    # Lightweight heartbeat log every update
-                    logger.debug(f"💓 [ULTRA] Heartbeat: {percentage:.1f}% - iteration {current_iteration or 'N/A'}")
-                
-                # Add simulation ID validation
-                simulation_id = getattr(self, 'simulation_id', None)
-                if not simulation_id:
-                    logger.warning(f"🔧 [ULTRA] No simulation_id available for progress update")
-                
-                # ✅ CRITICAL FIX: Check if main progress system is disabled (for B2B API isolation)
-                if simulation_id:
-                    try:
-                        # Ensure simulation ID is properly included
-                        progress_data["simulation_id"] = simulation_id
-                        
-                        # ✅ B2B API ISOLATION: Skip main system updates if disabled
-                        if getattr(self, '_disable_main_progress_system', False):
-                            logger.info(f"🚀 [B2B_ISOLATED] Skipping main progress system for isolated B2B engine: {simulation_id}")
-                        else:
-                            # Normal path: Use main simulation progress system
-                            from simulation.service import update_simulation_progress
-                            update_time = time.time()
-                            update_simulation_progress(simulation_id, progress_data)
-                            update_duration = time.time() - update_time
-                            
-                            logger.info(f"🔍 [ULTRA] Progress updated via service layer successfully in {update_duration:.3f}s")
-                        
-                        # 🔧 REMOVED: Progress verification was causing false mismatch warnings
-                        # because get_progress() was checking Redis while actual storage is in memory bridge
-                        logger.debug(f"🔍 [ULTRA] Progress update completed for {simulation_id}: {percentage}%")
-                            
-                    except Exception as service_error:
-                        logger.error(f"🔧 [ULTRA] Service layer progress update failed: {service_error}, falling back to direct callback")
-                        # Fallback to direct callback if service layer fails
-                        if self.progress_callback:
-                            try:
-                                self.progress_callback(progress_data)
-                                logger.info(f"🔍 [ULTRA] Fallback callback completed")
-                            except Exception as callback_error:
-                                logger.error(f"🔧 [ULTRA] Fallback callback also failed: {callback_error}")
-                else:
-                    # Fallback to direct callback if no simulation_id
-                    if self.progress_callback:
+                try:
+                    self.progress_callback(progress_data)
+                    
+                    # CRITICAL FIX: Extend TTL for long-running simulations to prevent progress expiration
+                    # AND ensure progress is immediately synced to Redis
+                    if hasattr(self, 'simulation_id') and self.simulation_id:
                         try:
-                            self.progress_callback(progress_data)
-                            logger.info(f"🔍 [ULTRA] Direct callback completed (no simulation_id)")
-                        except Exception as callback_error:
-                            logger.error(f"🔧 [ULTRA] Direct callback failed: {callback_error}")
-                    else:
-                        logger.warning(f"🔧 [ULTRA] No progress callback available and no simulation_id")
-                
-                logger.info(f"🔍 [ULTRA] Progress callback sequence completed successfully")
-                
+                            from shared.progress_store import _progress_store
+                            _progress_store.extend_ttl(self.simulation_id, 7200)  # Extend to 2 hours
+                            
+                            # CRITICAL FIX: Also directly update Redis to ensure sync
+                            # This ensures the progress is immediately available to frontend polling
+                            _progress_store.set_progress(self.simulation_id, progress_data)
+                            logger.debug(f"🕒 [ULTRA] Extended TTL and synced to Redis for {self.simulation_id}")
+                        except Exception as ttl_error:
+                            logger.warning(f"🕒 [ULTRA] Could not extend TTL or sync: {ttl_error}")
+                except Exception as e:
+                    logger.warning(f"🔧 [ULTRA] Progress callback failed: {e}")
+                    
             except Exception as e:
-                logger.error(f"🔧 [ULTRA] Progress callback failed with exception: {e}", exc_info=True)
+                logger.error(f"🔧 [ULTRA] Progress update failed: {e}")
     
     def get_performance_stats(self) -> Dict[str, Any]:
         """Get comprehensive performance statistics including GPU metrics"""
@@ -2623,7 +2492,7 @@ class UltraMonteCarloEngine:
                 if iteration > 0 and iteration % max(1, self.iterations // 100) == 0:
                     progress_percentage = (iteration / self.iterations) * 100
                     stage_description = f"Running Monte Carlo iteration {iteration}/{self.iterations}"
-                    self._update_progress(progress_percentage, stage_description, stage="simulation")
+                    self._update_progress(progress_percentage, stage_description, current_iteration=iteration, stage="simulation")
                 
                 # ✅ CRITICAL: Use SAME random values for ALL targets in this iteration
                 current_values = constant_values.copy()
@@ -3315,6 +3184,15 @@ class UltraMonteCarloEngine:
             tile_start = tile_idx * max_tile
             tile_end = min((tile_idx + 1) * max_tile, iterations)
             tile_slice = slice(tile_start, tile_end)
+            
+            # CRITICAL FIX: Add progress tracking for GPU tiles
+            progress_percentage = (tile_end / iterations) * 100
+            self._update_progress(
+                progress_percentage, 
+                f"GPU Processing: Tile {tile_idx + 1}/{num_tiles} (iterations {tile_start}-{tile_end})",
+                current_iteration=tile_end,
+                stage="simulation"
+            )
             values_tile: Dict[Tuple[str, str], Any] = {}
             # Upload MC inputs
             for k, host_series in random_values.items():
@@ -4038,6 +3916,16 @@ class UltraMonteCarloEngine:
                 tile_start = tile_idx * max_tile
                 tile_end = min((tile_idx + 1) * max_tile, iterations)
                 tile_slice = slice(tile_start, tile_end)
+                
+                # CRITICAL FIX: Add progress tracking for GPU tiles
+                progress_percentage = (tile_end / iterations) * 100
+                self._update_progress(
+                    progress_percentage, 
+                    f"GPU Processing: Tile {tile_idx + 1}/{num_tiles} (iterations {tile_start}-{tile_end})",
+                    current_iteration=tile_end,
+                    stage="simulation"
+                )
+                
                 stream = streams[tile_idx % len(streams)] if streams else None
                 ctx = stream if stream is not None else cp.cuda.Stream.null
                 with ctx:

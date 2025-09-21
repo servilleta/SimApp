@@ -5,6 +5,7 @@ Handles WebSocket connections and broadcasts for simulation progress.
 
 import json
 import logging
+import time
 from typing import Dict, Set
 from fastapi import WebSocket
 import asyncio
@@ -42,14 +43,20 @@ class WebSocketManager:
             return
             
         # Convert progress data to JSON
+        # CRITICAL FIX: Send progress_percentage to match frontend expectations
         message = json.dumps({
             "type": "progress_update",
             "simulation_id": simulation_id,
-            "progress": progress_data.get("progress_percentage", 0),
+            "progress": progress_data.get("progress_percentage", 0),  # Keep for backward compatibility
+            "progress_percentage": progress_data.get("progress_percentage", 0),  # Frontend expects this
             "stage": progress_data.get("stage", "unknown"),
+            "stage_description": progress_data.get("stage_description", ""),
             "iteration": progress_data.get("current_iteration", 0),
+            "current_iteration": progress_data.get("current_iteration", 0),
             "total": progress_data.get("total_iterations", 0),
-            "status": progress_data.get("status", "running")
+            "total_iterations": progress_data.get("total_iterations", 0),
+            "status": progress_data.get("status", "running"),
+            "timestamp": progress_data.get("timestamp", time.time())
         })
         
         # Send to all connected clients

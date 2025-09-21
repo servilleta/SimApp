@@ -167,13 +167,24 @@ class ProgressStore:
         return f"simulation:metadata:{simulation_id}"
     
     def _set_progress_bridge(self, simulation_id: str, progress_data: dict):
-        """🚀 FINAL SOLUTION: Store progress in thread-safe in-memory bridge"""
+        """🚀 FINAL SOLUTION: Store progress in thread-safe in-memory bridge AND sync to Redis"""
         with self._bridge_lock:
             self._progress_bridge[simulation_id] = {
                 'data': progress_data,
                 'timestamp': time.time()
             }
             logger.info(f"🌉 [BRIDGE] Stored progress in memory bridge for {simulation_id}: {progress_data.get('progress_percentage', 'N/A')}%")
+            
+            # CRITICAL FIX: Also update Redis immediately to ensure sync
+            try:
+                if self.redis_client and self._is_redis_available():
+                    key = self._get_key(simulation_id)
+                    value = json.dumps(progress_data)
+                    # Use short TTL for progress updates
+                    self.redis_client.setex(key, 300, value)  # 5 minute TTL for active progress
+                    logger.debug(f"🔄 [BRIDGE->REDIS] Synced progress to Redis for {simulation_id}")
+            except Exception as e:
+                logger.warning(f"⚠️ [BRIDGE->REDIS] Failed to sync to Redis: {e}")
     
     def _get_progress_bridge(self, simulation_id: str) -> Optional[dict]:
         """🚀 FINAL SOLUTION: Get progress from thread-safe in-memory bridge"""

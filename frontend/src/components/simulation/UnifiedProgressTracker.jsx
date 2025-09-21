@@ -354,17 +354,25 @@ const UnifiedProgressTracker = ({ simulationIds = [], childSimulationIds = [], t
         }));
         
         // Update target progress for smooth interpolation
-        setTargetProgress(progressDataFromStore.progressPercentage || 0);
+        // CRITICAL FIX: Don't reset to 0 if progress data is undefined
+        const newTargetProgress = progressDataFromStore.progressPercentage;
+        if (newTargetProgress !== undefined && newTargetProgress !== null) {
+          setTargetProgress(newTargetProgress);
+        }
         
         // CRITICAL FIX: Ensure smoothProgress is updated immediately for large gaps
         const currentSmoothProgress = smoothProgress;
-        const newTargetProgress = progressDataFromStore.progressPercentage || 0;
-        const progressGap = Math.abs(newTargetProgress - currentSmoothProgress);
+        const validProgressValue = progressDataFromStore.progressPercentage;
         
-        // If there's a large gap (>10%) or we're starting from 0, update smoothProgress immediately
-        if (progressGap > 10 || (currentSmoothProgress === 0 && newTargetProgress > 0)) {
-          setSmoothProgress(newTargetProgress);
-          logger.debug(`[UnifiedProgressTracker] 🚀 IMMEDIATE PROGRESS UPDATE: ${currentSmoothProgress}% → ${newTargetProgress}% (gap: ${progressGap}%)`);
+        // Only update if we have valid progress data
+        if (validProgressValue !== undefined && validProgressValue !== null) {
+          const progressGap = Math.abs(validProgressValue - currentSmoothProgress);
+          
+          // If there's a large gap (>10%) or we're starting from 0, update smoothProgress immediately
+          if (progressGap > 10 || (currentSmoothProgress === 0 && validProgressValue > 0)) {
+            setSmoothProgress(validProgressValue);
+            logger.debug(`[UnifiedProgressTracker] 🚀 IMMEDIATE PROGRESS UPDATE: ${currentSmoothProgress}% → ${validProgressValue}% (gap: ${progressGap}%)`);
+          }
         }
         
         // Update variables object with real-time data
